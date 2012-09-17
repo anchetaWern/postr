@@ -1,0 +1,27 @@
+.container{
+	padding: 20px;
+}
+
+.form_container {
+    width: 315px;
+    background-color: whitesmoke;
+    height: 200px;
+    padding: 30px;
+    margin: 0 auto;
+}
+
+.app_title {
+    margin: 0 auto;
+    width: 117px;
+	height: 49px;
+}
+
+.app_title h4, .app_title img{
+	float: left;
+	margin-right:5px;
+}
+
+.form_container a {
+    float: right;
+	margin-left: 10px;
+}
