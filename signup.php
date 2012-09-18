@@ -5,14 +5,14 @@ include('includes/header.php');
 		<div class="container">
 			<div class="app_title">
 				<img src="img/postr.png"/>
-				<h4>Postr</h4>
+				<h2>Postr</h2>
 			</div>
 			<div class="form_container">
 				<form>
-				  <label>Email</label>
+				  <label for="email">Email</label>
 				  <input type="text" name="email" id="email" autofocus/>
 				  
-				  <label>Password</label>
+				  <label for="pword">Password</label>
 				  <input type="password" name="pword" id="pword"/>
 				  
 				  
@@ -26,7 +26,9 @@ include('includes/header.php');
 include('includes/footer.php');
 ?>	
 	<script>
-	$('#sign_up').click(function(){
+	$('#sign_up').click(function(e){
+		e.preventDefault();
+		
 		var user_info = {
 			email : $.trim($('#email').val()),
 			pword : $.trim($('#pword').val())
@@ -36,7 +38,8 @@ include('includes/footer.php');
 			'actions/actions.php', 
 			{'action' : 'sign_up', 'email' : user_info.email, 'pword' : user_info.pword}, 
 			function(data){
-				if(data == 1){
+				
+				if(data > 0){
 					noty_success.text = 'Account was successfully created!';
 					noty(noty_success);
 				}else{

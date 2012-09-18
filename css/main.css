@@ -3,16 +3,17 @@
 }
 
 .form_container {
-    width: 315px;
+    width: 405px;
     background-color: whitesmoke;
-    height: 200px;
+    height: 150px;
     padding: 30px;
     margin: 0 auto;
+	display: table;
 }
 
 .app_title {
     margin: 0 auto;
-    width: 117px;
+    width: 143px;
 	height: 49px;
 }
 
