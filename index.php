@@ -1,13 +1,6 @@
-<!doctype html>
-<html>
-	<head>
-		<title>Postr</title>
-		<link rel="stylesheet" href="libs/foundation/stylesheets/foundation.css"/>
-		<link rel="stylesheet" href="css/main.css"/>
-		
-		<link rel="postr_icon" href="img/postr.ico">
-
-	</head>
+<?php
+include('includes/header.php');
+?>
 	<body>
 		<div class="container">
 			<div class="app_title">
@@ -23,15 +16,38 @@
 				  <input type="password" name="pword" id="pword"/>
 				  
 				  
-				  <a href="#" class="success button">Login</a>
+				  <a href="#" id="login" class="success button">Login</a>
 				  <a href="signup.php">Signup</a>
 				</form> 
 			</div><!--/.form_container-->
 		</div><!--/.container-->
 	</body>
-	
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
-	<script src="libs/noty/js/noty/jquery.noty.js"></script>
-	<script src="libs/noty/js/noty/layouts/topCenter.js"></script>
+<?php
+include('includes/footer.php');
+?>		
+	<script>
+	$('#login').click(function(){
+		var user_info = {
+			email : $.trim($('#email').val()),
+			pword : $.trim($('#pword').val())
+		};
+		
+		$.post(
+			'actions/actions.php', 
+			{'action' : 'login', 'email' : user_info.email, 'pword' : user_info.pword},
+			function(data){
+				if(parseInt(data) > 0){
+					noty_success.text = 'Login Successfull!';
+					noty(noty_success);
+					
+					setTimeout(function(){
+						window.location.replace('postr.php');
+					}, 1000);
+					
+				}
+			}
+		);
+	});
+	</script>
 </html>
  

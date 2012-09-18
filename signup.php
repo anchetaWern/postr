@@ -1,15 +1,6 @@
-<!doctype html>
-<html>
-	<head>
-		<title>Postr</title>
-		<link rel="stylesheet" href="libs/foundation/stylesheets/foundation.css"/>
-		<link rel="stylesheet" href="libs/noty/css/jquery.noty.css"/>
-		<link rel="stylesheet" href="libs/noty/css/noty_theme_default.css"/>
-		<link rel="stylesheet" href="css/main.css"/>
-		
-		<link rel="postr_icon" href="img/postr.ico">
-
-	</head>
+<?php
+include('includes/header.php');
+?>
 	<body>
 		<div class="container">
 			<div class="app_title">
@@ -31,41 +22,10 @@
 			</div><!--/.form_container-->
 		</div><!--/.container-->
 	</body>
-	
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
-	<script src="libs/noty/js/noty/jquery.noty.js"></script>
-	<script src="libs/noty/js/jquery.noty.js"></script>
-	
-	
+<?php
+include('includes/footer.php');
+?>	
 	<script>
-	var noty_success = {
-		"text":"Operation was successfully completed!",
-		"layout":"top",
-		"type":"success",
-		"textAlign":"center",
-		"easing":"swing",
-		"animateOpen":{"height":"toggle"},
-		"animateClose":{"height":"toggle"},
-		"speed":500,
-		"timeout":5000,
-		"closable":true,
-		"closeOnSelfClick":true
-	}
-	
-	var noty_err = {
-		"text":"An error occured, please try again",
-		"layout":"top",
-		"type":"error",
-		"textAlign":"center",
-		"easing":"swing",
-		"animateOpen":{"height":"toggle"},
-		"animateClose":{"height":"toggle"},
-		"speed":500,
-		"timeout":5000,
-		"closable":true,
-		"closeOnSelfClick":true
-	}
-	
 	$('#sign_up').click(function(){
 		var user_info = {
 			email : $.trim($('#email').val()),
@@ -80,7 +40,7 @@
 					noty_success.text = 'Account was successfully created!';
 					noty(noty_success);
 				}else{
-					noty_success.text = 'An Error Occured While Creating Your Account, Please Try Again.';
+					noty_err.text = 'An Error Occured While Creating Your Account, Please Try Again.';
 					noty(noty_err);
 				}
 				
@@ -90,4 +50,3 @@
 	});
 	</script>
 </html>
- 
