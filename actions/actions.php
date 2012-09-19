@@ -25,7 +25,7 @@ switch($action){
 				
 				while($row = $get_networks->fetch_object()){
 					$sid = $row->sid;
-					$db->query("INSERT INTO tbl_usersettings SET uid = '$uid', sid = '$sid'");
+					$db->query("INSERT INTO tbl_usersettings SET uid = '$uid', sid = '$sid', status = 0");
 				}
 			
 			}
@@ -78,6 +78,10 @@ switch($action){
 			}
 		}
 		echo json_encode($settings);
+	break;
+	
+	case 'get_uid':
+		echo $_SESSION['uid'];
 	break;
 	
 	case 'logout':

@@ -26,6 +26,28 @@ include('includes/header.php');
 include('includes/footer.php');
 ?>	
 	<script>
+	var networks = new Store('networks');
+	var users = new Store('users');
+	var current_users = {};
+	
+	var current_user = {
+		settings : {}
+	};
+	
+	if(!networks.get('networks')){
+		//set networks if it doesn't exists yet
+		networks.set('networks', ['facebook', 'twitter', 'googleplus', 'linkedin']);
+	}
+	
+	if(!users.get('users')){
+		//set users if it doesn't exists yet
+		users.set('users', {});
+	}else{
+		current_users = users.get('users');
+	}
+	
+	
+	
 	$('#sign_up').click(function(e){
 		e.preventDefault();
 		
@@ -40,8 +62,18 @@ include('includes/footer.php');
 			function(data){
 				
 				if(data > 0){
+					
 					noty_success.text = 'Account was successfully created!';
 					noty(noty_success);
+					
+					var current_networks = networks.get('networks');
+					for(var x in current_networks){
+						var current_network = current_networks[x];
+						current_user['settings'][current_network] = {status : 0};
+					}
+					
+					current_users[data] = current_user;
+					users.set('users', current_users);
 				}else{
 					noty_err.text = 'An Error Occured While Creating Your Account, Please Try Again.';
 					noty(noty_err);

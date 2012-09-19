@@ -25,6 +25,7 @@ include('includes/header.php');
 <?php
 include('includes/footer.php');
 ?>		
+
 	<script>
 	$('#login').click(function(e){
 		e.preventDefault();
