@@ -42,13 +42,6 @@ header('Location: index.php');
 						
 					</p>
 					<p>
-						<label data-for="twitter">
-							<input type="checkbox" id="twitter">
-							<span class="custom checkbox"></span>
-							<a href="#" class="network_settings">Twitter</a>
-						</label>
-					</p>
-					<p>
 						<label data-for="gplus">
 							<input type="checkbox" id="gplus" >
 							<span class="custom checkbox"></span>
@@ -62,7 +55,13 @@ header('Location: index.php');
 							<a href="#" class="network_settings">LinkedIn</a>
 						</label>
 					</p>
-					
+					<p>
+						<label data-for="twitter">
+							<input type="checkbox" id="twitter">
+							<span class="custom checkbox"></span>
+							<a href="#" class="network_settings">Twitter</a>
+						</label>
+					</p>
 				</form>
 			</p>
 			<a class="close-reveal-modal">&#215;</a>
@@ -72,10 +71,15 @@ header('Location: index.php');
 			<h3>Facebook Settings</h3>
 			<p>
 				<label for="fb_pages">Pages</label>
-				<input type="text" id="fb_pages" list="fb_pages_list" autocomplete="off"/>
-				<datalist id="fb_pages_list">
-				
-				</datalist>
+				<input type="text" id="fb_pages"/>
+			</p>
+			<p>
+				<div id="current_fb_pages">
+					
+				</div>
+			</p>
+			<p>
+				<a href="#" id="add_fb_page" class="success button">Add Page</a>
 			</p>
 			<a class="close-reveal-modal">&#215;</a>
 		</div><!--/#facebook_modal-->
@@ -91,12 +95,13 @@ include('includes/footer.php');
 	<script src="http://connect.facebook.net/en_US/all.js"></script>
 	<script src="libs/foundation/javascripts/jquery.foundation.reveal.js"></script>
 	<script src="libs/foundation/javascripts/jquery.foundation.forms.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
 	
 	<script>
 		var users = new Store("users");
 		var current_users = {};
-		var current_user = {
-		};
+		var current_user = {};
+		var current_fb_page = {};
 		
 		$(document).foundationCustomForms();
 		
@@ -109,6 +114,25 @@ include('includes/footer.php');
 			function(data){
 				current_user.uid = data;
 				current_user.settings = users.get('users')[current_user.uid]['settings'];
+				
+				var index = 0;
+				for(var x in current_user.settings){
+					
+					var network = x;
+					var network_status = current_user.settings[x]['status'];
+					
+					if(network_status != 0){
+						$($('#settings_form span')[index]).addClass('checked');
+						
+						switch(network){
+							case 'facebook':
+								fb_login();
+							break;
+						}
+						
+					}
+					index++;
+				}
 			}
 		);
 		
@@ -118,53 +142,11 @@ include('includes/footer.php');
 		}else{
 			current_users = users.get('users');
 		}
-		
-		
-		/*
-		$.post(
-			'actions/actions.php', 
-			{'action' : 'load_set'},
-			function(data){
-				var settings = JSON.parse(data);
-				var set_length = settings.length;
-				for(var x in settings){
-					
-					if(settings[x]['status'] != 0){
-						$($('#settings_form span')[x]).addClass('checked');
-						var network = $($('#settings_form span')[x]).parents('label').data('for');
-						
-						switch(network){
-							case 'facebook':
-								fb_login();
-							break;
-						}
-					}
-				}
-			}
-		);
-		*/
-		
-		for(var x in current_user.settings){
-			var network = x;
-			var network_status = current_user.settings[x]['status'];
-			if(network_status != 0){
-				$($('#settings_form span')[x]).addClass('checked');
-				
-				switch(network){
-					case 'facebook':
-						fb_login();
-					break;
-				}
-			}
-		}
-		
-		
+	
 		$('.network_settings').live('click', function(e){
 			e.preventDefault();
 			$('#facebook_modal').reveal();
 		});
-		
-		
 		
 		$('#settings').click(function(e){
 			e.preventDefault();
@@ -192,16 +174,10 @@ include('includes/footer.php');
 			var network = $(this).siblings('input').attr('id');
 			var status = Number(!$(this).hasClass('checked'));
 			
+			current_user['settings'][network] = {};
 			current_user['settings'][network]['status'] = status;
 			current_users[current_user.uid]['settings'][network]['status'] = status;
-			users.set(current_users);
-			
-			/*
-			$.post(
-				'actions/actions.php', 
-				{'action' : 'set', 'sid' : sid, 'status' : status}
-			);
-			*/
+			users.set('users', current_users);
 			
 		});
 		
@@ -220,33 +196,43 @@ include('includes/footer.php');
 					  }
 					}, 
 						function(data){
-							console.log(data);
+						
 							var user_pages = data[1]['fql_result_set'];
+							var data_source = [];
 							for(var x in user_pages){
 								var page_obj = user_pages[x];
 								
 								var page_id = page_obj['page_id'];
 								var page_name = page_obj['name'];
 								var page_description = page_obj['description'];
-								var page_pic = page_obj['description']
-								var fragment = document.createDocumentFragment();
+								var page_pic = page_obj['pic_small']
 								
-								var page_item = $("<option>")
-												.attr("value", page_name)
-												.text(page_name)
-												.data(
-													{
-													'id' : page_id,
-													'pic' : page_pic,
-													'description' : page_description
-													}
-												);
-								
-								page_item.appendTo(fragment);
+								data_source.push(
+									{
+									'value' : page_name, 'page_name' : page_name, 
+									'page_id' : page_id, 'page_pic' : page_pic,
+									'page_description' : page_description
+									} 
+								);
 								
 							}
 							
-							$('#fb_pages_list').append(fragment);
+							$('#fb_pages').autocomplete({
+								source: data_source,
+								select: function(event, ui){
+									current_fb_page['page_id'] = ui['item']['page_id'];
+									current_fb_page['page_description'] = ui['item']['page_description'];
+									current_fb_page['page_name'] = ui['item']['page_name'];
+									current_fb_page['page_pic'] = ui['item']['page_pic'];
+								}
+							}).data("autocomplete")._renderItem = function(ul, item){
+								return $("<li></li>")
+								.data("item.autocomplete", item)
+								.append("<a id='"+  item.page_id +"'>" + "<img src='" + item.page_pic + "' />" + item.page_name+ "</a>" )
+								.appendTo( ul );
+							};
+							
+							
 						}
 					);
 				}, 
@@ -254,6 +240,27 @@ include('includes/footer.php');
 			);
 		
 		};
+		
+		$('#add_fb_page').click(function(e){
+			e.preventDefault();
+			$('#fb_pages').val('');
+			
+			var current_fb_pages = $('#current_fb_pages');
+			var fb_page = $("<div>");
+			
+			var page_img = $("<img>").attr("src", current_fb_page['page_pic']);
+			var page_name = $("<span>").text(current_fb_page['page_name']);
+			var page_checkbox = $("<input>").attr({"type" : "checkbox", "id" : current_fb_page['page_id'], "class" : "current_pages"});
+			fb_page.append(page_img);
+			fb_page.append(page_checkbox);
+			fb_page.append(page_name);
+			
+			current_fb_pages.append(fb_page);
+			
+			current_user['settings']['facebook']['pages'] = {page_id : {"page_name" : current_fb_page['page_name'], "page_img" : current_fb_page['page_pic']}};
+			//current_users[current_user.uid]['settings']['facebook']['pages'] = {page_id : {"page_name" : current_fb_page['page_name'], "page_img" : current_fb_page['page_pic']}};
+			//users.set('users', current_users);
+		});
 		
 		var fb_post = function(){
 			var post_contents = {
@@ -274,7 +281,6 @@ include('includes/footer.php');
 				}
 			);
 		};
-		
 		
 	</script>
 </html>

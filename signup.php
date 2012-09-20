@@ -36,7 +36,7 @@ include('includes/footer.php');
 	
 	if(!networks.get('networks')){
 		//set networks if it doesn't exists yet
-		networks.set('networks', ['facebook', 'twitter', 'googleplus', 'linkedin']);
+		networks.set('networks', ['facebook', 'gplus', 'linked_in', 'twitter']);
 	}
 	
 	if(!users.get('users')){
@@ -69,6 +69,7 @@ include('includes/footer.php');
 					var current_networks = networks.get('networks');
 					for(var x in current_networks){
 						var current_network = current_networks[x];
+						console.log(current_network);
 						current_user['settings'][current_network] = {status : 0};
 					}
 					
