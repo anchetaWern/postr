@@ -32,11 +32,10 @@ header('Location: index.php');
 			<h3>Settings</h3>
 			<span>Where to Post?</span>
 			<p>
-				<form class="custom" id="settings_form">
+				<form id="settings_form">
 					<p>
 						<label data-for="facebook">
 							<input type="checkbox" id="facebook">
-							<span class="custom checkbox"></span>
 							<a href="#" class="network_settings">Facebook</a>
 						</label>
 						
@@ -44,21 +43,18 @@ header('Location: index.php');
 					<p>
 						<label data-for="gplus">
 							<input type="checkbox" id="gplus" >
-							<span class="custom checkbox"></span>
 							<a href="#" class="network_settings">Google+</a>
 						</label>
 					</p>
 					<p>
 						<label data-for="linked_in">
 							<input type="checkbox" id="linked_in">
-							<span class="custom checkbox"></span>
 							<a href="#" class="network_settings">LinkedIn</a>
 						</label>
 					</p>
 					<p>
 						<label data-for="twitter">
 							<input type="checkbox" id="twitter">
-							<span class="custom checkbox"></span>
 							<a href="#" class="network_settings">Twitter</a>
 						</label>
 					</p>
@@ -122,7 +118,7 @@ include('includes/footer.php');
 					var network_status = current_user.settings[x]['status'];
 					
 					if(network_status != 0){
-						$($('#settings_form span')[index]).addClass('checked');
+						$($('#settings_form input[type=checkbox]')[index]).attr('checked', true);
 						
 						switch(network){
 							case 'facebook':
@@ -133,6 +129,33 @@ include('includes/footer.php');
 					}
 					index++;
 				}
+				
+				var fb_pages = current_user.settings.facebook.pages;
+				var fb_pages_container = $('#current_fb_pages');
+				
+				
+				for(var x in fb_pages){
+					var page_id = x;
+					
+					var fb_page = $("<div>");
+					var page_img = $("<img>").attr("src", fb_pages[page_id]['page_img']);
+					var page_name = $("<span>").text(fb_pages[page_id]['page_name']);
+					var page_status = fb_pages[page_id]['page_status'];
+					
+					var page_checkbox = $("<input>").attr({
+						"type" : "checkbox", 
+						"id" : page_id, 
+						"class" : "current_fb_pages",
+						"checked" : !!page_status
+					});
+					
+					
+					page_img.appendTo(fb_page);
+					page_checkbox.appendTo(fb_page);
+					page_name.appendTo(fb_page);
+				}
+				
+				fb_pages_container.append(fb_page);
 			}
 		);
 		
@@ -169,10 +192,10 @@ include('includes/footer.php');
 			fb_post();
 		});
 		
-		$('#settings_form span').click(function(){
+		$('#settings_form input[type=checkbox]').click(function(){
 			
-			var network = $(this).siblings('input').attr('id');
-			var status = Number(!$(this).hasClass('checked'));
+			var network = $(this).attr('id');
+			var status = Number(!!$(this).attr('checked'));
 			
 			current_user['settings'][network] = {};
 			current_user['settings'][network]['status'] = status;
@@ -243,23 +266,58 @@ include('includes/footer.php');
 		
 		$('#add_fb_page').click(function(e){
 			e.preventDefault();
-			$('#fb_pages').val('');
 			
-			var current_fb_pages = $('#current_fb_pages');
-			var fb_page = $("<div>");
+			if(!!!current_user.settings.facebook.pages[current_fb_page['page_id']]){
+				$('#fb_pages').val('');
+				
+				var current_fb_pages = $('#current_fb_pages');
+				var fb_page = $("<div>");
+				
+				var page_img = $("<img>").attr("src", current_fb_page['page_pic']);
+				var page_name = $("<span>").text(current_fb_page['page_name']);
+				var page_checkbox = $("<input>").attr({
+					"type" : "checkbox", 
+					"id" : current_fb_page['page_id'], 
+					"class" : "current_fb_pages",
+					"checked" : true
+				});
+				
+				fb_page.append(page_img);
+				fb_page.append(page_checkbox);
+				fb_page.append(page_name);
+				
+				current_fb_pages.append(fb_page);
+				
+				current_user['settings']['facebook']['pages'] = {};
+				current_user['settings']['facebook']['pages'][current_fb_page['page_id']] = {
+					"page_name" : current_fb_page['page_name'], 
+					"page_img" : current_fb_page['page_pic']
+				};
+				
+				current_users[current_user.uid]['settings']['facebook']['pages'] = {};
+				current_users[current_user.uid]['settings']['facebook']['pages'][current_fb_page['page_id']] = {
+					"page_name" : current_fb_page['page_name'], 
+					"page_img" : current_fb_page['page_pic'],
+					"page_status" : 1
+				};
+				users.set('users', current_users);
+				
+				noty_success.text = 'Facebook Page Successfully Added!';
+				noty(noty_success);
+			}else{
+				noty_err.text = 'The selected Facebook Page has already been added before!';
+				noty(noty_err);
+			}
+		});
+		
+		$('.current_fb_pages').live('click', function(){
+			//change status whether to post to the currently selected facebook page or not
+			var page_id = $(this).attr('id');
+			var page_status = Number(!!$(this).attr('checked'));
+			current_user['settings']['facebook']['pages'][page_id]['page_status'] = page_status; 
 			
-			var page_img = $("<img>").attr("src", current_fb_page['page_pic']);
-			var page_name = $("<span>").text(current_fb_page['page_name']);
-			var page_checkbox = $("<input>").attr({"type" : "checkbox", "id" : current_fb_page['page_id'], "class" : "current_pages"});
-			fb_page.append(page_img);
-			fb_page.append(page_checkbox);
-			fb_page.append(page_name);
-			
-			current_fb_pages.append(fb_page);
-			
-			current_user['settings']['facebook']['pages'] = {page_id : {"page_name" : current_fb_page['page_name'], "page_img" : current_fb_page['page_pic']}};
-			//current_users[current_user.uid]['settings']['facebook']['pages'] = {page_id : {"page_name" : current_fb_page['page_name'], "page_img" : current_fb_page['page_pic']}};
-			//users.set('users', current_users);
+			current_users[current_user.uid]['settings']['facebook']['pages'][page_id]['page_status'] = page_status;
+			users.set('users', current_users);
 		});
 		
 		var fb_post = function(){
