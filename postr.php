@@ -10,7 +10,7 @@ header('Location: index.php');
 			<span class="logout"><a id="logout" href="#"><?php echo $_SESSION['email']; ?> [Logout]</a></span>
 			<div class="app_title">
 				<img src="img/postr.png"/>
-				<h2>Postr</h2>
+				<h2><a href="postr.php" class="link">Postr</a></h2>
 			</div>
 			
 			<div class="form_container">
@@ -21,6 +21,9 @@ header('Location: index.php');
 					
 					<a href="#" id="post_status" class="success button">Post</a>
 					<a href="#" id="settings">Settings</a>
+					<div id="char_limit">
+					140
+					</div>
 					
 				</form> 
 			</div><!--/.form_container-->
@@ -60,6 +63,17 @@ header('Location: index.php');
 					</p>
 				</form>
 			</p>
+			<p>
+			<span>Multi-Post Mode</span>
+				<form id="multipost_form">
+					<p>
+						<label data-for="multi_post">
+							<input type="checkbox" id="multi_post">
+							Yes
+						</label>
+					</p>
+				</form>
+			</p>
 			<a class="close-reveal-modal">&#215;</a>
 		</div><!--/#settings_modal-->
 		
@@ -90,7 +104,6 @@ include('includes/footer.php');
 ?>	
 	<script src="http://connect.facebook.net/en_US/all.js"></script>
 	<script src="libs/foundation/javascripts/jquery.foundation.reveal.js"></script>
-	<script src="libs/foundation/javascripts/jquery.foundation.forms.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
 	
 	<script>
@@ -99,17 +112,16 @@ include('includes/footer.php');
 		var current_user = {};
 		var current_fb_page = {};
 		
-		$(document).foundationCustomForms();
-		
 		$('#status').val("");
-		
-		
+	
 		$.post(
 			'actions/actions.php',
 			{'action' : 'get_uid'},
 			function(data){
 				current_user.uid = data;
 				current_user.settings = users.get('users')[current_user.uid]['settings'];
+				
+				$('#multi_post').attr('checked', !!current_user.settings.multipost);
 				
 				var index = 0;
 				for(var x in current_user.settings){
@@ -189,7 +201,32 @@ include('includes/footer.php');
 		
 		$('#post_status').click(function(e){
 			e.preventDefault();
-			fb_post();
+			var post_contents = {};
+			var post = $.trim($('#status').val());
+			
+			if(current_user.settings.multipost){//rapidfire
+				var posts = post.split(",");
+				var posts_length = posts.length;
+				for(var i = 0; i <= posts_length; i++){
+					console.log(posts[i]);
+					post_contents = {
+						message : posts[i],
+						link : posts[i]
+					};
+					
+					fb_post(post_contents);
+				}
+				
+			}else{
+				
+				var post_link = get_link(post);
+				post_contents = {
+					message : post,
+					link : post_link
+				};
+				
+				fb_post(post_contents);
+			}
 		});
 		
 		$('#settings_form input[type=checkbox]').click(function(){
@@ -320,23 +357,19 @@ include('includes/footer.php');
 			users.set('users', current_users);
 		});
 		
-		var fb_post = function(){
-			var post = $.trim($('#status').val());
-			var post_link = get_link(post);
-			var post_contents = {
-				message : post,
-				link : post_link
-			};
-			
+		var fb_post = function(post_contents){
+	
 			//post to current users wall
-			FB.api('/me/feed', 'post', post_contents, 
-				function(response){
-					if(!response || response.error){
-						noty_err.text = 'Post to facebook profile was unsuccessful!';
-						noty(noty_err);
+			if(current_user['settings']['facebook']['status']){
+				FB.api('/me/feed', 'post', post_contents, 
+					function(response){
+						if(!response || response.error){
+							noty_err.text = 'Post to facebook profile was unsuccessful!';
+							noty(noty_err);
+						}
 					}
-				}
-			);
+				);
+			}
 			
 			//post to pages checked by current user
 			var current_fb_pages = current_user['settings']['facebook']['pages'];
@@ -366,9 +399,30 @@ include('includes/footer.php');
 					});
 				}
 			}
-			
-			
 		};
+		
+		
+		$('#multi_post').click(function(){
+			var status = Number(!!$(this).attr('checked'));
+			current_user['settings']['multipost'] = status;
+			
+			current_users[current_user.uid]['settings']['multipost'] = status;
+			users.set('users', current_users);
+		});
+		
+		$('#status').keydown(function(){
+			var current_length = $(this).val().length;
+			var char_limit = 140;
+			
+			var remaining_char = char_limit - current_length;
+			$('#char_limit').text(remaining_char);
+			
+			if(remaining_char <= 10){
+				$('#char_limit').css('color', 'red');
+			}else{
+				$('#char_limit').css('color', 'black');
+			}
+		});
 		
 		var get_link = function(post){
 			var url = '';
