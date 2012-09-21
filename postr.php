@@ -321,23 +321,64 @@ include('includes/footer.php');
 		});
 		
 		var fb_post = function(){
+			var post = $.trim($('#status').val());
+			var post_link = get_link(post);
 			var post_contents = {
-				message : 'Testing message with images and links',
-				name : 'test test',
-				link : 'http://google.com',
-				description : 'test post to facebook page'
+				message : post,
+				link : post_link
 			};
-
-			FB.api('/217828178231935/feed', 'post', post_contents, 
+			
+			//post to current users wall
+			FB.api('/me/feed', 'post', post_contents, 
 				function(response){
 					if(!response || response.error){
-						noty_err.text = 'Facebook Post Unsuccessful';
+						noty_err.text = 'Post to facebook profile was unsuccessful!';
 						noty(noty_err);
-					}else{
-						
 					}
 				}
 			);
+			
+			//post to pages checked by current user
+			var current_fb_pages = current_user['settings']['facebook']['pages'];
+			for(var page_id in current_fb_pages){
+				var page_name = current_fb_pages[page_id]['page_name'];
+				var page_status = current_fb_pages[page_id]['page_status'];
+				
+				
+				
+				if(!!page_status){
+					FB.api('/' + page_id, {fields: 'access_token'}, function(data){
+						if(data['access_token']){
+							
+							post_contents.access_token = data['access_token'];
+							
+							FB.api('/' + page_id + '/feed',
+								'post',
+								post_contents,
+								function(response){
+									if(!response || response.error){
+										noty_err.text = 'Post to ' + page_name + ' was unsuccessfull!';
+										noty(noty_err);
+									}
+								}
+							);
+						}
+					});
+				}
+			}
+			
+			
+		};
+		
+		var get_link = function(post){
+			var url = '';
+			var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi;
+			var regex = new RegExp(expression);
+			
+			if(post.match(regex)){
+				url = regex.exec(post)[0]; 
+			}
+			return url;
 		};
 		
 	</script>
