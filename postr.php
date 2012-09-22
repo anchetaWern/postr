@@ -209,8 +209,6 @@ include('includes/footer.php');
 				
 				for(var x in fb_groups){
 					var group_id = x;
-					console.log(group_id);
-					
 					var fb_group = $("<div>");
 					var group_name = $("<span>").text(fb_groups[group_id]['group_name']);
 					var group_status = fb_groups[group_id]['group_status'];
@@ -271,11 +269,12 @@ include('includes/footer.php');
 			var post_contents = {};
 			var post = $.trim($('#status').val());
 			
-			if(current_user.settings.multipost){//rapidfire
+			//comma-separated posts; only works for links
+			if(current_user.settings.multipost){
 				var posts = post.split(",");
 				var posts_length = posts.length;
 				for(var i = 0; i <= posts_length; i++){
-					console.log(posts[i]);
+					
 					post_contents = {
 						message : posts[i],
 						link : posts[i]
@@ -285,7 +284,8 @@ include('includes/footer.php');
 				}
 				
 			}else{
-				
+			//single post
+	
 				var post_link = get_link(post);
 				post_contents = {
 					message : post,
@@ -541,15 +541,14 @@ include('includes/footer.php');
 				var page_name = current_fb_pages[page_id]['page_name'];
 				var page_status = current_fb_pages[page_id]['page_status'];
 				
-				
-				
 				if(!!page_status){
 					FB.api('/' + page_id, {fields: 'access_token'}, function(data){
 						if(data['access_token']){
 							
 							post_contents.access_token = data['access_token'];
 							
-							FB.api('/' + page_id + '/feed',
+							FB.api(
+								'/' + page_id + '/feed',
 								'post',
 								post_contents,
 								function(response){
@@ -562,6 +561,28 @@ include('includes/footer.php');
 						}
 					});
 				}
+			}
+			
+			//post to groups checked by the current user
+			var current_fb_groups = current_user['settings']['facebook']['groups'];
+			for(var group_id in current_fb_groups){	
+				var group_name 		= current_fb_groups[group_id]['group_name'];
+				var group_status	= current_fb_groups[group_id]['group_status'];
+				
+				if(!!group_status){
+					FB.api(
+						'/137814292939466/feed', 
+						'post', 
+						post_contents, 
+						function(response){
+							if(!response || response.error){
+								noty_err.text = 'Post to ' + group_name + ' was unsuccessfull!';
+								noty(noty_err);
+							}
+						}
+					);
+				}
+				
 			}
 		};
 		
