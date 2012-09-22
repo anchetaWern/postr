@@ -74,23 +74,52 @@ header('Location: index.php');
 					</p>
 				</form>
 			</p>
+			
 			<a class="close-reveal-modal">&#215;</a>
 		</div><!--/#settings_modal-->
 		
 		<div id="facebook_modal" class="reveal-modal medium">
 			<h3>Facebook Settings</h3>
-			<p>
-				<label for="fb_pages">Pages</label>
-				<input type="text" id="fb_pages"/>
-			</p>
-			<p>
-				<div id="current_fb_pages">
-					
-				</div>
-			</p>
-			<p>
-				<a href="#" id="add_fb_page" class="success button">Add Page</a>
-			</p>
+			
+			<dl class="tabs contained">
+			  <dd class="active"><a href="#pages">Pages</a></dd>
+			  <dd><a href="#groups">Groups</a></dd>
+			</dl>
+			
+			<ul class="tabs-content contained">
+			  <li class="active" id="pagesTab">
+				<p>
+					<label for="fb_pages">Pages</label>
+					<input type="text" id="fb_pages"/>
+				</p>
+				<p>
+					<div id="current_fb_pages">
+						
+					</div>
+				</p>
+				<p>
+					<a href="#" id="add_fb_page" class="success button">Add Page</a>
+				</p>
+			  </li>
+			  
+			  <li id="groupsTab">
+				<p>
+					<label for="fb_groups">Groups</label>
+					<input type="text" id="fb_groups"/>
+				</p>
+				<p>
+					<div id="current_fb_groups">
+						
+					</div>
+				</p>
+				<p>
+					<a href="#" id="add_fb_group" class="success button">Add Group</a>
+				</p>
+			  </li>
+			</ul>
+			
+			<a href="#" id="back_to_settings" style="float:right;" class="button">Back to Settings</a>
+			
 			<a class="close-reveal-modal">&#215;</a>
 		</div><!--/#facebook_modal-->
 		
@@ -105,15 +134,19 @@ include('includes/footer.php');
 	<script src="http://connect.facebook.net/en_US/all.js"></script>
 	<script src="libs/foundation/javascripts/jquery.foundation.reveal.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
+	<script src="libs/foundation/javascripts/jquery.foundation.tabs.js"></script>
 	
 	<script>
 		var users = new Store("users");
 		var current_users = {};
 		var current_user = {};
 		var current_fb_page = {};
+		var current_fb_group = {};
 		
 		$('#status').val("");
 	
+		$(document).foundationTabs();
+		
 		$.post(
 			'actions/actions.php',
 			{'action' : 'get_uid'},
@@ -142,6 +175,7 @@ include('includes/footer.php');
 					index++;
 				}
 				
+				/*load current facebook pages*/
 				var fb_pages = current_user.settings.facebook.pages;
 				var fb_pages_container = $('#current_fb_pages');
 				
@@ -165,9 +199,37 @@ include('includes/footer.php');
 					page_img.appendTo(fb_page);
 					page_checkbox.appendTo(fb_page);
 					page_name.appendTo(fb_page);
+					
+					fb_pages_container.append(fb_page);
 				}
 				
-				fb_pages_container.append(fb_page);
+				/*load current facebook groups*/
+				var fb_groups = current_user.settings.facebook.groups;
+				var fb_groups_container = $('#current_fb_groups');
+				
+				for(var x in fb_groups){
+					var group_id = x;
+					console.log(group_id);
+					
+					var fb_group = $("<div>");
+					var group_name = $("<span>").text(fb_groups[group_id]['group_name']);
+					var group_status = fb_groups[group_id]['group_status'];
+					
+					var group_checkbox = $("<input>").attr({
+						"type" : "checkbox", 
+						"id" : group_id, 
+						"class" : "current_fb_groups",
+						"checked" : !!group_status
+					});
+					
+					group_checkbox.appendTo(fb_group);
+					group_name.appendTo(fb_group);
+					
+					fb_groups_container.append(fb_group);
+				}
+				
+				
+				
 			}
 		);
 		
@@ -181,6 +243,11 @@ include('includes/footer.php');
 		$('.network_settings').live('click', function(e){
 			e.preventDefault();
 			$('#facebook_modal').reveal();
+		});
+		
+		$('#back_to_settings').click(function(e){
+			e.preventDefault();
+			$('#settings_modal').reveal();
 		});
 		
 		$('#settings').click(function(e){
@@ -295,14 +362,43 @@ include('includes/footer.php');
 							
 						}
 					);
+					
+					FB.api('/me/groups', function(groups){
+						var user_groups = groups.data;
+						var data_source = [];
+						
+						for(var index in user_groups){
+							var group_id = user_groups[index]['id'];
+							var group_name = user_groups[index]['name'];
+							data_source.push(
+								{
+								'value' : group_name,
+								'group_id' : group_id,
+								'group_name' : group_name
+								}
+							);
+						}
+						
+						$('#fb_groups').autocomplete({
+							source: data_source,
+							select: function(event, ui){
+								current_fb_group['group_id'] = ui['item']['group_id'];
+								current_fb_group['group_name'] = ui['item']['group_name'];
+							}
+						});
+					});
 				}, 
-				{scope: 'user_about_me,email,read_friendlists,publish_stream,manage_pages'}
+				{scope: 'user_about_me,email,read_friendlists,publish_stream,manage_pages,user_groups'}
 			);
 		
 		};
 		
 		$('#add_fb_page').click(function(e){
 			e.preventDefault();
+			
+			if(!current_user.settings.facebook.pages){
+				current_user.settings.facebook.pages = {};
+			}
 			
 			if(!!!current_user.settings.facebook.pages[current_fb_page['page_id']]){
 				$('#fb_pages').val('');
@@ -325,18 +421,25 @@ include('includes/footer.php');
 				
 				current_fb_pages.append(fb_page);
 				
-				current_user['settings']['facebook']['pages'] = {};
+				if(!current_user['settings']['facebook']['pages']){
+					current_user['settings']['facebook']['pages'] = {};
+				}
+				
 				current_user['settings']['facebook']['pages'][current_fb_page['page_id']] = {
 					"page_name" : current_fb_page['page_name'], 
 					"page_img" : current_fb_page['page_pic']
 				};
 				
-				current_users[current_user.uid]['settings']['facebook']['pages'] = {};
+				if(!current_users[current_user.uid]['settings']['facebook']['pages']){
+					current_users[current_user.uid]['settings']['facebook']['pages'] = {};
+				}
+				
 				current_users[current_user.uid]['settings']['facebook']['pages'][current_fb_page['page_id']] = {
 					"page_name" : current_fb_page['page_name'], 
 					"page_img" : current_fb_page['page_pic'],
 					"page_status" : 1
 				};
+				
 				users.set('users', current_users);
 				
 				noty_success.text = 'Facebook Page Successfully Added!';
@@ -347,6 +450,57 @@ include('includes/footer.php');
 			}
 		});
 		
+		$('#add_fb_group').click(function(e){
+			e.preventDefault();
+				if(!current_user.settings.facebook.groups){
+					current_user.settings.facebook.groups = {};
+				}
+				
+				if(!!!current_user.settings.facebook.groups[current_fb_group['group_id']]){
+					$('#fb_groups').val('');
+					
+					var current_fb_groups = $('#current_fb_groups');
+					var fb_group = $("<div>");
+					
+					var group_name = $("<span>").text(current_fb_group['group_name']);
+					var group_checkbox = $("<input>").attr({
+						"type" : "checkbox", 
+						"id" : current_fb_group['group_id'], 
+						"class" : "current_fb_groups",
+						"checked" : true
+					});
+					
+					fb_group.append(group_checkbox);
+					fb_group.append(group_name);
+					
+					current_fb_groups.append(fb_group);
+					
+					if(!current_user['settings']['facebook']['groups']){
+						current_user['settings']['facebook']['groups'] = {};
+					}
+					
+					current_user['settings']['facebook']['groups'][current_fb_group['group_id']] = {
+						"group_name" : current_fb_group['group_name']
+					};
+					
+					if(!current_users[current_user.uid]['settings']['facebook']['groups']){
+						current_users[current_user.uid]['settings']['facebook']['groups'] = {};
+					}
+					
+					current_users[current_user.uid]['settings']['facebook']['groups'][current_fb_group['group_id']] = {
+						"group_name" : current_fb_group['group_name'],
+						"group_status" : 1
+					};
+					users.set('users', current_users);
+					
+					noty_success.text = 'Facebook Group Successfully Added!';
+					noty(noty_success);
+				}else{
+					noty_err.text = 'The selected Facebook Group has already been added before!';
+					noty(noty_err);
+				}
+		});
+		
 		$('.current_fb_pages').live('click', function(){
 			//change status whether to post to the currently selected facebook page or not
 			var page_id = $(this).attr('id');
@@ -354,6 +508,16 @@ include('includes/footer.php');
 			current_user['settings']['facebook']['pages'][page_id]['page_status'] = page_status; 
 			
 			current_users[current_user.uid]['settings']['facebook']['pages'][page_id]['page_status'] = page_status;
+			users.set('users', current_users);
+		});
+		
+		$('.current_fb_groups').live('click', function(){
+			//change status whether to post to the currently selected facebook group or not
+			var group_id = $(this).attr('id');
+			var group_status = Number(!!$(this).attr('checked'));
+			current_user['settings']['facebook']['groups'][group_id]['group_status'] = group_status; 
+			
+			current_users[current_user.uid]['settings']['facebook']['groups'][group_id]['group_status'] = group_status;
 			users.set('users', current_users);
 		});
 		
