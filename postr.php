@@ -310,7 +310,14 @@ include('includes/footer.php');
 					
 					$.post(
 						'post_image.php', 
-						{'action' : 'post_image', 'message' : post, 'filename' : current_file.filename},
+						{
+							'action' : 'post_image', 
+							'message' : post, 
+							'filename' : current_file.filename,
+							'fb_setting' : current_user.settings.facebook.status,
+							'fb_groups' : current_user.settings.facebook.groups,
+							'fb_pages' : current_user.settings.facebook.pages
+						},
 						function(response){
 							var response_obj = JSON.parse(response);
 							if(response_obj['error']){
