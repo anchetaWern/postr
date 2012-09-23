@@ -1,4 +1,4 @@
-<?php
+<?php 
 $response = array('status'=>1, 'response'=>'File Successfully Uploaded!');
 if(!empty($_FILES['images']['name'])){
 	$allowed_types = array('image/jpeg', 'image/jpg', 'image/gif', 'image/png');
@@ -42,6 +42,8 @@ if(!empty($_FILES['images']['name'])){
 	if($error_message != ''){
 		$response['status'] = 0;
 		$response['response'] = $error_message;
+		
+	}else{
 		$response['filename'] = $upload_name;
 	}
 	

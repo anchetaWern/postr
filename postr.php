@@ -157,6 +157,7 @@ include('includes/footer.php');
 		var current_user = {};
 		var current_fb_page = {};
 		var current_fb_group = {};
+		var current_file = {};
 		
 		$('#status').val("");
 	
@@ -302,12 +303,31 @@ include('includes/footer.php');
 			//single post
 	
 				var post_link = get_link(post);
-				post_contents = {
-					message : post,
-					link : post_link
-				};
 				
-				fb_post(post_contents);
+				
+				if($('#file_to_upload').children().length){
+					//post message via php; only for posts which has image attachments
+					
+					$.post(
+						'post_image.php', 
+						{'action' : 'post_image', 'message' : post, 'filename' : current_file.filename},
+						function(response){
+							var response_obj = JSON.parse(response);
+							if(response_obj['error']){
+								noty_err.text = response_obj['error_message'];
+								noty(noty_err);
+							}
+						}
+					);
+				}else{
+					//post message via javascript
+					post_contents = {
+						message : post,
+						link : post_link
+					};
+					
+					fb_post(post_contents);
+				}
 			}
 		});
 		
@@ -665,6 +685,8 @@ include('includes/footer.php');
 										}else{
 											noty_success.text = response_data['response'];
 											noty(noty_success);
+											
+											current_file.filename = response_data['filename'];
 										}
 									}  
 								});  
@@ -684,7 +706,7 @@ include('includes/footer.php');
 		
 		function showUploadedItem(source){  
 			var img_container = $('#file_to_upload')[0];
-			var	img  = $("<img>").attr('src', source);  
+			var	img  = $("<img>").attr({'src' : source, 'id' : 'uploaded_image'});  
 			
 			$(img_container).html(img);
 		}  
