@@ -14,13 +14,28 @@ header('Location: index.php');
 			</div>
 			
 			<div class="form_container">
-				<form class="custom">
+				<form class="custom" enctype="multipart/form-data" action="upload.php">
 					<label for="status">What's Up?</label>
 					<textarea name="status" id="status" style="height:100px;">
 					</textarea>
 					
 					<a href="#" id="post_status" class="success button">Post</a>
-					<a href="#" id="settings">Settings</a>
+					<a href="#" id="settings">
+						<i class="icon foundicon-settings"></i>
+					</a>
+					<a href="#" id="upload">
+						<i class="icon foundicon-paper-clip"></i>
+					</a>
+					<input type="file" name="photo" id="photo" style="display:none;"/>
+					
+					<div id="file_to_upload">
+					
+					</div>
+					
+					<div id="upload_response">
+					
+					</div>
+					
 					<div id="char_limit">
 					140
 					</div>
@@ -227,7 +242,7 @@ include('includes/footer.php');
 				}
 				
 				
-				
+				twitter_limit();
 			}
 		);
 		
@@ -306,6 +321,7 @@ include('includes/footer.php');
 			current_users[current_user.uid]['settings'][network]['status'] = status;
 			users.set('users', current_users);
 			
+			twitter_limit();
 		});
 		
 		
@@ -388,7 +404,7 @@ include('includes/footer.php');
 						});
 					});
 				}, 
-				{scope: 'user_about_me,email,read_friendlists,publish_stream,manage_pages,user_groups'}
+				{scope: 'user_about_me,email,read_friendlists,publish_stream,manage_pages,user_groups,user_photos'}
 			);
 		
 		};
@@ -596,7 +612,86 @@ include('includes/footer.php');
 		});
 		
 		$('#status').keydown(function(){
-			var current_length = $(this).val().length;
+			remaining_chars();
+		});
+		
+		$('#status').keyup(function(){
+			remaining_chars();
+		});
+		
+		$('#upload').click(function(e){
+			e.preventDefault();
+			$('#photo').click();
+		});
+		
+		$('#photo').change(function(){
+			var filepath = $(this).val();
+			var filepath_r = filepath.split("\\");
+			$('#filename').text(filepath_r[filepath_r.length - 1]);
+			
+			(function(){  
+				if($('#photo')[0].files[0]){
+					var file = $('#photo')[0].files[0];
+					if (!!file.type.match(/image.*/)){  
+
+						var formdata = false;  
+						if(window.FormData){  
+							formdata = new FormData();  
+
+							if(window.FileReader){  
+								reader = new FileReader();  
+								reader.onloadend = function(e){  
+									showUploadedItem(e.target.result);  
+									
+								};  
+								reader.readAsDataURL(file);  
+							}  
+							if(formdata){  
+								formdata.append("images", file);  
+								
+								$.ajax({  
+									url: "upload.php",  
+									type: "POST",  
+									data: formdata,  
+									processData: false,  
+									contentType: false,  
+									success: function(response){
+										var response_data = JSON.parse(response);
+										if(response_data['status'] == 0){
+										
+											noty_err.text = response_data['response'];
+											noty(noty_err);
+											
+										}else{
+											noty_success.text = response_data['response'];
+											noty(noty_success);
+										}
+									}  
+								});  
+							} 
+
+						}
+					}else{
+						noty_err.text = 'The uploaded file was not an image!';
+						noty(noty_err);
+					}
+				}
+			})(); 
+			
+
+			
+		});
+		
+		function showUploadedItem(source){  
+			var img_container = $('#file_to_upload')[0];
+			var	img  = $("<img>").attr('src', source);  
+			
+			$(img_container).html(img);
+		}  
+
+		
+		var remaining_chars = function(){
+			var current_length = $('#status').val().length;
 			var char_limit = 140;
 			
 			var remaining_char = char_limit - current_length;
@@ -607,7 +702,7 @@ include('includes/footer.php');
 			}else{
 				$('#char_limit').css('color', 'black');
 			}
-		});
+		};
 		
 		var get_link = function(post){
 			var url = '';
@@ -618,6 +713,14 @@ include('includes/footer.php');
 				url = regex.exec(post)[0]; 
 			}
 			return url;
+		};
+		
+		var twitter_limit = function(){
+			if(current_user.settings.twitter.status){
+				$('#char_limit').show();
+			}else{
+				$('#char_limit').hide();
+			}
 		};
 		
 	</script>
