@@ -30,3 +30,26 @@
 .logout{
 	float: right;
 }
+
+.link{
+	color: #000;
+}
+
+.icon{
+	font-size: 28px; 
+	margin-bottom: 16px; 
+	vertical-align: center;
+	color: #000;
+}
+
+.icon:hover{
+	color:#2BA6CB;
+}
+
+#file_to_upload{
+    margin-top: 55px;
+}
+
+#upload_response{
+    margin-top: 10px;
+}
