@@ -1,9 +1,69 @@
 <?php
 session_start();
-include('includes/header.php');
+require_once('includes/header.php');
+require_once('actions/conn.php');
+require_once('libs/eden/eden.php');
+require_once('libs/eden/eden/twitter.php');
+
+
 if(empty($_SESSION['uid'])){
-header('Location: index.php');
+	header('Location: index.php');
 }
+
+define('TWITTER_TOKEN', 'RATMGupqLicAGXCnaGtcA');
+define('TWITTER_SECRET', 'yNCmLJla7UJ8IcAGviH4RZAXxl2jOfHFzXFKvBTYik');
+
+$auth = eden('twitter')->auth(TWITTER_TOKEN, TWITTER_SECRET);
+
+//check if user is already authenticated before
+$user_id = $_SESSION['uid'];
+$getUser = $db->query("SELECT oauth_token, oauth_secret FROM tbl_oauth WHERE user_id = '$user_id' AND provider = 'twitter'");
+
+if($getUser->num_rows == 0){//new user
+	if(!isset($_SESSION['access_token'], $_SESSION['access_secret'])){
+	  
+		if(!isset($_SESSION['request_secret'])){
+		  
+			$token = $auth->getRequestToken();
+			$_SESSION['request_secret'] = $token['oauth_token_secret'];
+		   
+			$login = $auth->getLoginUrl($token['oauth_token'], 'http://goo.gl');
+			$_SESSION['twitter_login'] = $login;
+		}
+	   
+		if(isset($_GET['oauth_token'], $_GET['oauth_verifier'])){
+			
+			$token = $auth->getAccessToken($_GET['oauth_token'], $_SESSION['request_secret'], $_GET['oauth_verifier']);
+			
+			$_SESSION['access_token']   = $token['oauth_token'];
+			$_SESSION['access_secret']  = $token['oauth_token_secret'];
+		   
+			$user_token		= $_SESSION['access_token'];
+			$user_secret	= $_SESSION['access_secret'];
+			
+			$users = eden('twitter')->users(TWITTER_TOKEN, TWITTER_SECRET, $user_token, $user_secret);
+			
+			$user_info = $users->getCredentials();
+			
+			$username = $user_info['screen_name'];
+			$oauth_id = $user_info['id'];
+			
+			//newly connected twitter account
+			$db->query("
+				INSERT INTO tbl_oauth SET oauth_token = '$user_token', 
+				oauth_secret = '$user_secret', oauth_id = '$oauth_id', provider = 'twitter',
+				user_id = '$user_id', username = '$username'
+			");
+				
+			unset($_SESSION['request_secret']);
+		}
+	}
+}else{
+	$user_data = $getUser->fetch_object();
+	
+	$_SESSION['access_token'] 	= $user_data->oauth_token;
+	$_SESSION['access_secret'] 	= $user_data->oauth_secret;
+}	
 ?>
 	<body>
 		<div class="container">
@@ -54,26 +114,26 @@ header('Location: index.php');
 					<p>
 						<label data-for="facebook">
 							<input type="checkbox" id="facebook">
-							<a href="#" class="network_settings">Facebook</a>
+							<a href="#" class="facebook_settings">Facebook</a>
 						</label>
 						
 					</p>
 					<p>
 						<label data-for="gplus">
 							<input type="checkbox" id="gplus" >
-							<a href="#" class="network_settings">Google+</a>
+							<a href="#" class="gplus_settings">Google+</a>
 						</label>
 					</p>
 					<p>
 						<label data-for="linked_in">
 							<input type="checkbox" id="linked_in">
-							<a href="#" class="network_settings">LinkedIn</a>
+							<a href="#" class="linked_in_settings">LinkedIn</a>
 						</label>
 					</p>
 					<p>
 						<label data-for="twitter">
 							<input type="checkbox" id="twitter">
-							<a href="#" class="network_settings">Twitter</a>
+							<a href="<?php echo $_SESSION['twitter_login']; ?>" class="network_settings">Twitter</a>
 						</label>
 					</p>
 				</form>
@@ -254,7 +314,7 @@ include('includes/footer.php');
 			current_users = users.get('users');
 		}
 	
-		$('.network_settings').live('click', function(e){
+		$('.facebook_settings').live('click', function(e){
 			e.preventDefault();
 			$('#facebook_modal').reveal();
 		});
@@ -311,12 +371,12 @@ include('includes/footer.php');
 					$.post(
 						'post_image.php', 
 						{
-							'action' : 'post_image', 
 							'message' : post, 
 							'filename' : current_file.filename,
 							'fb_setting' : current_user.settings.facebook.status,
 							'fb_groups' : current_user.settings.facebook.groups,
-							'fb_pages' : current_user.settings.facebook.pages
+							'fb_pages' : current_user.settings.facebook.pages,
+							'twitter_setting' : current_user.settings.twitter.status
 						},
 						function(response){
 							var response_obj = JSON.parse(response);
@@ -334,6 +394,24 @@ include('includes/footer.php');
 					};
 					
 					fb_post(post_contents);
+					
+					$.post(
+						'post_image.php', 
+						{
+							'message' : post,
+							'fb_setting' : current_user.settings.facebook.status,
+							'fb_groups' : current_user.settings.facebook.groups,
+							'fb_pages' : current_user.settings.facebook.pages,
+							'twitter_setting' : current_user.settings.twitter.status
+						},
+						function(response){
+							var response_obj = JSON.parse(response);
+							if(response_obj['error']){
+								noty_err.text = response_obj['error_message'];
+								noty(noty_err);
+							}
+						}
+					);
 				}
 			}
 		});

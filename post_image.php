@@ -1,15 +1,33 @@
 <?php
 require_once('libs/fb_php_sdk/src/facebook.php');
+require_once('libs/eden/eden.php');
+require_once('libs/eden/eden/twitter.php');
 
+/*CONFIGS*/
 $facebook = new Facebook(array( 
   'appId'  => '355248497890497',
   'secret' => 'a856b0b1f46f0481785812d0ce55e23f',
 ));
 
+define('TWITTER_TOKEN', 'RATMGupqLicAGXCnaGtcA');
+define('TWITTER_SECRET', 'yNCmLJla7UJ8IcAGviH4RZAXxl2jOfHFzXFKvBTYik');
+
+$user_token = $_SESSION['access_token'];
+$user_secret = $_SESSION['access_secret'];
+
+$tweets = eden('twitter')->tweets(TWITTER_TOKEN, TWITTER_SECRET, $user_token, $user_secret);
+
+
+/*FACEBOOK*/
 $return_message = array('error'=>0, 'error_message'=>'');
 $message = $_POST['message'];
-$filename = $_POST['filename'];
 
+$has_file = 1;
+if(!empty($_POST['filename'])){
+	$file = realpath($_POST['filename']);
+}else{
+	$has_file = 2;
+}
 
 $facebook->setFileUploadSupport(true);
 $facebook_setting = $_POST['fb_setting'];
@@ -20,7 +38,7 @@ if($facebook_setting == 1){
 		'post',
 		array(
 			'message' => $message,
-			'source' => '@'.realpath($filename) 
+			'source' => '@'.$file
 		)
 	);
 }
@@ -35,7 +53,7 @@ foreach($groups as $group_id=>$group){
 			"post",
 			array(
 				"message" => $message,
-				"source" => '@'.realpath($filename) 
+				"source" => '@'.$file
 			)
 		);
 	}
@@ -50,10 +68,21 @@ foreach($pages as $page_id=>$page){
 		$contents = array(
 			"access_token"=>$page_access_token, 
 			"message"=>$message, 
-			"source"=>'@'.realpath($filename)
+			"source"=>'@'.$file
 		);
 		
 		$post_response = $facebook->api("/$page_id/photos", "post", $contents);
+	}
+}
+
+/*TWITTER*/
+$twitter_setting = $_POST['twitter_setting'];
+
+if($twitter_setting == 1){
+	if($has_file == 1){//with media
+		$tweets->tweetMedia($message, '@'.$file);
+	}else{//plain tweet
+		$tweets->tweet($message);
 	}
 }
 
