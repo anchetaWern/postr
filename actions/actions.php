@@ -60,8 +60,58 @@ switch($action){
 	break;
 
 	case 'load_settings':
-		
-		//$settings = $db->query("");
+		$user_settings = array();
+
+		//load users
+		$users = $db->query("SELECT uid, multipost FROM tbl_users");
+		if($users->num_rows > 0){
+			while($user_row = $users->fetch_object()){
+
+					$uid = $user_row->uid;
+					$multipost_status = $user_row->multipost;
+
+					//load general settings
+					$settings = $db->query("SELECT network, status FROM tbl_settings WHERE uid = '$uid'");
+					$fb_status = 0;
+
+					if($settings->num_rows > 0){
+						while($row = $settings->fetch_object()){
+
+							$network = $row->network;
+							$status = $row->status;
+							$user_settings[$uid]['settings'][$network] = array('status' => $status);
+							if($network == 'facebook'){
+								$fb_status = $status;
+							}
+						}
+					}//end general settings if
+
+					//facebook settings
+					$fb_settings = $db->query("SELECT fb_type, fb_id, fb_name, status FROM tbl_fbsettings WHERE uid = '$uid'");
+					$fb_settings_data = array();
+					if($fb_settings->num_rows > 0){
+						while($row = $fb_settings->fetch_object()){
+							$fb_type = $row->fb_type;
+							$fb_id = $row->fb_id;
+							$fb_name = $row->fb_name;
+							$status =  $row->status;
+
+							$prefix = substr($fb_type, 0, -1) . '_';
+							
+							$fb_settings_data[$fb_type][$fb_id] = array($prefix."name" => $fb_name, $prefix."status" => $status);
+							
+						}
+					}//end facebook settings if
+
+					$user_settings[$uid]['settings']['facebook'] = $fb_settings_data;
+					$user_settings[$uid]['settings']['facebook']['status'] = $fb_status;
+					$user_settings[$uid]['settings']['multipost'] = $multipost_status;
+
+			}//end load users while
+		}//end load users if
+
+
+		echo json_encode($user_settings);
 	break;
 
 	case 'create_fb_settings':
@@ -92,7 +142,7 @@ switch($action){
 	case 'update_fbsetting':
 		$user_id = $_SESSION['uid'];
 		$fb_id = $_POST['fb_id'];
-		$fb_status = $_POST['status'];
+		$status = $_POST['status'];
 		$db->query("UPDATE tbl_fbsettings SET status = '$status' WHERE fb_id = '$fb_id' AND uid = '$user_id'");
 	break;
 	

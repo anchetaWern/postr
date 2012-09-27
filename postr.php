@@ -229,7 +229,18 @@ include('includes/footer.php');
 			{'action' : 'get_uid'},
 			function(data){
 				current_user.uid = data;
-				current_user.settings = users.get('users')[current_user.uid]['settings'];
+				if(!users.get('users')[current_user.uid]){
+					$.post('actions/actions.php', {'action' : 'load_settings'}, function(data){
+  					var user_settings = JSON.parse(data);
+  					current_users = user_settings;
+
+  					current_user.settings = current_users[current_user.uid]['settings'];
+  					users.set('users', current_users);
+					});
+				}else{
+					current_user.settings = users.get('users')[current_user.uid]['settings'];
+				}
+				
 				
 				$('#multi_post').attr('checked', !!current_user.settings.multipost);
 				
@@ -364,7 +375,27 @@ include('includes/footer.php');
 					};
 					
 					fb_post(post_contents);
+
+					$.post(
+						'post_image.php', 
+						{
+							'message' : post_contents.message,
+							'fb_setting' : current_user.settings.facebook.status,
+							'fb_groups' : current_user.settings.facebook.groups,
+							'fb_pages' : current_user.settings.facebook.pages,
+							'twitter_setting' : current_user.settings.twitter.status
+						},
+						function(response){
+							var response_obj = JSON.parse(response);
+							if(response_obj['error']){
+								noty_err.text = response_obj['error_message'];
+								noty(noty_err);
+							}
+						}
+					);
 				}
+
+
 				
 			}else{
 			//single post

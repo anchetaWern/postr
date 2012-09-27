@@ -60,7 +60,7 @@ include('includes/footer.php');
 			'actions/actions.php', 
 			{'action' : 'sign_up', 'email' : user_info.email, 'pword' : user_info.pword}, 
 			function(data){
-				
+				var uid = data;
 				if(data > 0){
 					
 					noty_success.text = 'Account was successfully created!';
@@ -72,7 +72,7 @@ include('includes/footer.php');
 						current_user['settings'][current_network] = {status : 0};
 					}
 					
-					current_users[data] = current_user;
+					current_users[uid] = current_user;
 					users.set('users', current_users);
 				}else{
 					noty_err.text = 'An Error Occured While Creating Your Account, Please Try Again.';
