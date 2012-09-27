@@ -19,7 +19,17 @@ switch($action){
 			$query->bind_param("sss", $email, $hash, $salt);
 			$query->execute();
 			$uid = $query->insert_id;
-		
+			
+			//create default settings for new user
+			$select_networks = $db->query("SELECT network FROM tbl_networks");
+			if($select_networks->num_rows > 0){
+				while($row = $select_networks->fetch_object()){
+	
+					$network = $row->network;
+					$db->query("INSERT INTO tbl_settings SET network = '$network', uid = '$uid', status = 0");
+				}
+			}
+
 			echo $uid;
 		}
 	
@@ -48,7 +58,50 @@ switch($action){
 		}
 		
 	break;
+
+	case 'load_settings':
+		
+		//$settings = $db->query("");
+	break;
+
+	case 'create_fb_settings':
+		$user_id = $_SESSION['uid'];
+		$fb_type = $_POST['type'];
+		$fb_id	= $_POST['fb_id'];
+		$fb_name = $_POST['fb_name'];
+
+		$db->query("
+			INSERT INTO tbl_fbsettings SET uid = '$user_id', 
+			fb_type = '$fb_type', fb_id = '$fb_id', fb_name = '$fb_name'
+		");
+
+	break;
+
+	case 'update_settings':
+		$user_id = $_SESSION['uid'];
+		$network = $_POST['network'];
+		$network_status = $_POST['status'];
+
+		$db->query("
+			UPDATE tbl_settings SET status = '$network_status'
+			WHERE network = '$network' AND uid = '$user_id'
+		");
+
+	break;
+
+	case 'update_fbsetting':
+		$user_id = $_SESSION['uid'];
+		$fb_id = $_POST['fb_id'];
+		$fb_status = $_POST['status'];
+		$db->query("UPDATE tbl_fbsettings SET status = '$status' WHERE fb_id = '$fb_id' AND uid = '$user_id'");
+	break;
 	
+	case 'multipost':
+		$user_id = $_SESSION['uid'];
+		$multipost_status = $_POST['status'];
+		$db->query("UPDATE tbl_users SET multipost = '$multipost_status' WHERE uid = '$user_id'");
+	break;
+
 	case 'get_uid':
 		echo $_SESSION['uid'];
 	break;

@@ -1,5 +1,6 @@
 <?php
 session_start();
+header('Content-type: text/html; charset=utf-8');
 require_once('includes/header.php');
 require_once('actions/conn.php');
 require_once('libs/eden/eden.php');
@@ -120,7 +121,7 @@ if($getUser->num_rows == 0){//new user
 					</p>
 					<p>
 						<label data-for="gplus">
-							<input type="checkbox" id="gplus" >
+							<input type="checkbox" id="gplus" disabled>
 							<a href="#" class="gplus_settings">Google+</a>
 						</label>
 					</p>
@@ -318,6 +319,12 @@ include('includes/footer.php');
 			e.preventDefault();
 			$('#facebook_modal').reveal();
 		});
+
+		$('.gplus_settings').live('click', function(e){
+			e.preventDefault();
+			noty_err.text("Currently there's no write-access to the Google Plus API yet");
+			noty(noty_err);
+		});
 		
 		$('#back_to_settings').click(function(e){
 			e.preventDefault();
@@ -421,11 +428,16 @@ include('includes/footer.php');
 			var network = $(this).attr('id');
 			var status = Number(!!$(this).attr('checked'));
 			
-			current_user['settings'][network] = {};
+			if(!current_user['settings'][network]){
+				current_user['settings'][network] = {};
+			}
+
 			current_user['settings'][network]['status'] = status;
 			current_users[current_user.uid]['settings'][network]['status'] = status;
 			users.set('users', current_users);
 			
+			$.post('actions/actions.php', {'action' : 'update_settings', 'network' : network, 'status' : status});
+
 			twitter_limit();
 		});
 		
@@ -563,6 +575,12 @@ include('includes/footer.php');
 				
 				users.set('users', current_users);
 				
+				$.post('actions/actions.php', {
+						'action' : 'create_fb_settings',
+						'type' : 'pages', 'fb_id' : current_fb_page['page_id'], 
+						'fb_name' : current_fb_page['page_name']
+				});
+
 				noty_success.text = 'Facebook Page Successfully Added!';
 				noty(noty_success);
 			}else{
@@ -614,6 +632,13 @@ include('includes/footer.php');
 					};
 					users.set('users', current_users);
 					
+
+					$.post('actions/actions.php', {
+						'action' : 'create_fb_settings',
+						'type' : 'groups', 'fb_id' : current_fb_group['group_id'], 
+						'fb_name' : current_fb_group['group_name']
+					});
+
 					noty_success.text = 'Facebook Group Successfully Added!';
 					noty(noty_success);
 				}else{
@@ -630,6 +655,14 @@ include('includes/footer.php');
 			
 			current_users[current_user.uid]['settings']['facebook']['pages'][page_id]['page_status'] = page_status;
 			users.set('users', current_users);
+
+			$.post('actions/actions.php', 
+					{
+						'action' : 'update_fbsetting', 
+						'fb_id' : page_id, 'status' : page_status
+					}
+			);
+
 		});
 		
 		$('.current_fb_groups').live('click', function(){
@@ -640,6 +673,13 @@ include('includes/footer.php');
 			
 			current_users[current_user.uid]['settings']['facebook']['groups'][group_id]['group_status'] = group_status;
 			users.set('users', current_users);
+
+			$.post('actions/actions.php', 
+					{
+						'action' : 'update_fbsetting', 
+						'fb_id' : group_id, 'status' : group_status
+					}
+			);
 		});
 		
 		var fb_post = function(post_contents){
@@ -714,6 +754,8 @@ include('includes/footer.php');
 			
 			current_users[current_user.uid]['settings']['multipost'] = status;
 			users.set('users', current_users);
+
+			$.post('actions/actions.php', {'action' : 'multipost', 'status' : status});
 		});
 		
 		$('#status').keydown(function(){

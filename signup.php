@@ -69,7 +69,6 @@ include('includes/footer.php');
 					var current_networks = networks.get('networks');
 					for(var x in current_networks){
 						var current_network = current_networks[x];
-						console.log(current_network);
 						current_user['settings'][current_network] = {status : 0};
 					}
 					
