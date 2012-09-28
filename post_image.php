@@ -1,21 +1,26 @@
 <?php
+require_once('actions/conn.php');
 require_once('libs/fb_php_sdk/src/facebook.php');
 require_once('libs/eden/eden.php');
 require_once('libs/eden/eden/twitter.php');
+require_once('libs/linkedin/linkedin.php');
+require_once('includes/keys.php');
 
 /*CONFIGS*/
 $facebook = new Facebook(array( 
-  'appId'  => '355248497890497',
-  'secret' => 'a856b0b1f46f0481785812d0ce55e23f',
+  'appId'  => FB_APPID,
+  'secret' => FB_SECRET,
 ));
-
-define('TWITTER_TOKEN', 'RATMGupqLicAGXCnaGtcA');
-define('TWITTER_SECRET', 'yNCmLJla7UJ8IcAGviH4RZAXxl2jOfHFzXFKvBTYik');
 
 $user_token = $_SESSION['access_token'];
 $user_secret = $_SESSION['access_secret'];
 
-$tweets = eden('twitter')->tweets(TWITTER_TOKEN, TWITTER_SECRET, $user_token, $user_secret);
+
+
+$linkedin_tokens = array(
+	'consumerKey' => LINKEDIN_KEY,
+	'consumerSecret' => LINKEDIN_SECRET
+);
 
 
 /*FACEBOOK*/
@@ -45,9 +50,9 @@ if(!empty($file)){
 	}
 }
 
-$groups = $_POST['fb_groups'];
+$groups = isset($_POST['fb_groups']) or $groups = "";
 
-if(!empty($file)){
+if(!empty($file) && $groups != ''){
 	foreach($groups as $group_id=>$group){
 		$group_status = $group['group_status'];
 		
@@ -64,8 +69,8 @@ if(!empty($file)){
 	}
 }
 
-$pages = $_POST['fb_pages'];
-if(!empty($file)){
+$pages = isset($_POST['fb_pages']) or $pages = "";
+if(!empty($file) && $pages != ''){
 	foreach($pages as $page_id=>$page){
 		if($page['page_status'] == 1){
 			$page_data = $facebook->api("/$page_id", array("fields" => "access_token"));
@@ -83,15 +88,33 @@ if(!empty($file)){
 }
 
 /*TWITTER*/
-$twitter_setting = $_POST['twitter_setting'];
+$user_id = $_SESSION['uid'];
+$has_twitter = $db->query("SELECT user_id FROM tbl_oauth WHERE user_id = '$user_id' AND provider = 'twitter'");
+if($has_twitter->num_rows > 0){
 
-if($twitter_setting == 1){
-	if($has_file == 1){//with media
-		$tweets->tweetMedia($message, '@'.$file);
-	}else{//plain tweet
-		$tweets->tweet($message);
+	$twitter_setting = $_POST['twitter_setting'];
+	if($twitter_setting == 1){
+		$tweets = eden('twitter')->tweets(TWITTER_TOKEN, TWITTER_SECRET, $user_token, $user_secret);	
+		if($has_file == 1){//with media
+			$tweets->tweetMedia($message, '@'.$file);
+		}else{//plain tweet
+			$tweets->tweet($message);
+		}
 	}
 }
+
+
+
+/*LINKED IN*/
+$linkedin_setting = $_POST['linkedin_setting'];
+
+if($linkedin_setting == 1){
+
+	$linkedin = new linkedIn($linkedin_tokens);
+	$linkedin->connect();
+	$linkedin->updateStatus($message);
+}
+
 
 echo json_encode($return_message);
 ?>

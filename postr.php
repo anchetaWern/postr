@@ -2,69 +2,13 @@
 session_start();
 header('Content-type: text/html; charset=utf-8');
 require_once('includes/header.php');
-require_once('actions/conn.php');
-require_once('libs/eden/eden.php');
-require_once('libs/eden/eden/twitter.php');
-
+require_once('init.php');
 
 if(empty($_SESSION['uid'])){
 	header('Location: index.php');
 }
 
-define('TWITTER_TOKEN', 'RATMGupqLicAGXCnaGtcA');
-define('TWITTER_SECRET', 'yNCmLJla7UJ8IcAGviH4RZAXxl2jOfHFzXFKvBTYik');
-
-$auth = eden('twitter')->auth(TWITTER_TOKEN, TWITTER_SECRET);
-
-//check if user is already authenticated before
 $user_id = $_SESSION['uid'];
-$getUser = $db->query("SELECT oauth_token, oauth_secret FROM tbl_oauth WHERE user_id = '$user_id' AND provider = 'twitter'");
-
-if($getUser->num_rows == 0){//new user
-	if(!isset($_SESSION['access_token'], $_SESSION['access_secret'])){
-	  
-		if(!isset($_SESSION['request_secret'])){
-		  
-			$token = $auth->getRequestToken();
-			$_SESSION['request_secret'] = $token['oauth_token_secret'];
-		   
-			$login = $auth->getLoginUrl($token['oauth_token'], 'http://goo.gl');
-			$_SESSION['twitter_login'] = $login;
-		}
-	   
-		if(isset($_GET['oauth_token'], $_GET['oauth_verifier'])){
-			
-			$token = $auth->getAccessToken($_GET['oauth_token'], $_SESSION['request_secret'], $_GET['oauth_verifier']);
-			
-			$_SESSION['access_token']   = $token['oauth_token'];
-			$_SESSION['access_secret']  = $token['oauth_token_secret'];
-		   
-			$user_token		= $_SESSION['access_token'];
-			$user_secret	= $_SESSION['access_secret'];
-			
-			$users = eden('twitter')->users(TWITTER_TOKEN, TWITTER_SECRET, $user_token, $user_secret);
-			
-			$user_info = $users->getCredentials();
-			
-			$username = $user_info['screen_name'];
-			$oauth_id = $user_info['id'];
-			
-			//newly connected twitter account
-			$db->query("
-				INSERT INTO tbl_oauth SET oauth_token = '$user_token', 
-				oauth_secret = '$user_secret', oauth_id = '$oauth_id', provider = 'twitter',
-				user_id = '$user_id', username = '$username'
-			");
-				
-			unset($_SESSION['request_secret']);
-		}
-	}
-}else{
-	$user_data = $getUser->fetch_object();
-	
-	$_SESSION['access_token'] 	= $user_data->oauth_token;
-	$_SESSION['access_secret'] 	= $user_data->oauth_secret;
-}	
 ?>
 	<body>
 		<div class="container">
@@ -116,6 +60,7 @@ if($getUser->num_rows == 0){//new user
 						<label data-for="facebook">
 							<input type="checkbox" id="facebook">
 							<a href="#" class="facebook_settings">Facebook</a>
+							<a href="<?php echo $fbUrl; ?>">[ <?php echo $fbUrlText; ?> ]</a>
 						</label>
 						
 					</p>
@@ -128,13 +73,13 @@ if($getUser->num_rows == 0){//new user
 					<p>
 						<label data-for="linked_in">
 							<input type="checkbox" id="linked_in">
-							<a href="#" class="linked_in_settings">LinkedIn</a>
+							<a href="auth.php" class="linked_in_settings">LinkedIn</a>
 						</label>
 					</p>
 					<p>
 						<label data-for="twitter">
 							<input type="checkbox" id="twitter">
-							<a href="<?php echo $_SESSION['twitter_login']; ?>" class="network_settings">Twitter</a>
+							<a href="<?php echo $twitter_login; ?>" class="network_settings">Twitter</a>
 						</label>
 					</p>
 				</form>
@@ -225,12 +170,12 @@ include('includes/footer.php');
 		$(document).foundationTabs();
 		
 		$.post(
-			'actions/actions.php',
+			'actions.php',
 			{'action' : 'get_uid'},
 			function(data){
 				current_user.uid = data;
 				if(!users.get('users')[current_user.uid]){
-					$.post('actions/actions.php', {'action' : 'load_settings'}, function(data){
+					$.post('actions.php', {'action' : 'load_settings'}, function(data){
   					var user_settings = JSON.parse(data);
   					current_users = user_settings;
 
@@ -350,7 +295,7 @@ include('includes/footer.php');
 		$('#logout').click(function(e){
 			e.preventDefault();
 			$.post(
-				'actions/actions.php', 
+				'actions.php', 
 				{'action' : 'logout'}, 
 				function(){
 					window.location.replace('index.php');
@@ -374,16 +319,13 @@ include('includes/footer.php');
 						link : posts[i]
 					};
 					
-					fb_post(post_contents);
-
 					$.post(
-						'post_image.php', 
+						'actions.php', 
 						{
-							'message' : post_contents.message,
-							'fb_setting' : current_user.settings.facebook.status,
-							'fb_groups' : current_user.settings.facebook.groups,
-							'fb_pages' : current_user.settings.facebook.pages,
-							'twitter_setting' : current_user.settings.twitter.status
+							'action' : 'post_status',
+							'status' : post_contents.message,
+							'link' : post_contents.link,
+							'file' : ''
 						},
 						function(response){
 							var response_obj = JSON.parse(response);
@@ -395,62 +337,27 @@ include('includes/footer.php');
 					);
 				}
 
-
-				
 			}else{
 			//single post
-	
-				var post_link = get_link(post);
-				
-				
-				if($('#file_to_upload').children().length){
-					//post message via php; only for posts which has image attachments
-					
-					$.post(
-						'post_image.php', 
-						{
-							'message' : post, 
-							'filename' : current_file.filename,
-							'fb_setting' : current_user.settings.facebook.status,
-							'fb_groups' : current_user.settings.facebook.groups,
-							'fb_pages' : current_user.settings.facebook.pages,
-							'twitter_setting' : current_user.settings.twitter.status
-						},
-						function(response){
-							var response_obj = JSON.parse(response);
-							if(response_obj['error']){
-								noty_err.text = response_obj['error_message'];
-								noty(noty_err);
-							}
+		
+				var post_link = get_link(post) || "";
+
+				$.post(
+					'actions.php', 
+					{
+						'action' : 'post_status',
+						'status' : post,
+						'link' : post_link,
+						'file' : current_file.filename
+					},
+					function(response){
+						var response_obj = JSON.parse(response);
+						if(response_obj['error']){
+							noty_err.text = response_obj['error_message'];
+							noty(noty_err);
 						}
-					);
-				}else{
-					//post message via javascript
-					post_contents = {
-						message : post,
-						link : post_link
-					};
-					
-					fb_post(post_contents);
-					
-					$.post(
-						'post_image.php', 
-						{
-							'message' : post,
-							'fb_setting' : current_user.settings.facebook.status,
-							'fb_groups' : current_user.settings.facebook.groups,
-							'fb_pages' : current_user.settings.facebook.pages,
-							'twitter_setting' : current_user.settings.twitter.status
-						},
-						function(response){
-							var response_obj = JSON.parse(response);
-							if(response_obj['error']){
-								noty_err.text = response_obj['error_message'];
-								noty(noty_err);
-							}
-						}
-					);
-				}
+					}
+				);
 			}
 		});
 		
@@ -467,7 +374,7 @@ include('includes/footer.php');
 			current_users[current_user.uid]['settings'][network]['status'] = status;
 			users.set('users', current_users);
 			
-			$.post('actions/actions.php', {'action' : 'update_settings', 'network' : network, 'status' : status});
+			$.post('actions.php', {'action' : 'update_settings', 'network' : network, 'status' : status});
 
 			twitter_limit();
 		});
@@ -606,7 +513,7 @@ include('includes/footer.php');
 				
 				users.set('users', current_users);
 				
-				$.post('actions/actions.php', {
+				$.post('actions.php', {
 						'action' : 'create_fb_settings',
 						'type' : 'pages', 'fb_id' : current_fb_page['page_id'], 
 						'fb_name' : current_fb_page['page_name']
@@ -664,7 +571,7 @@ include('includes/footer.php');
 					users.set('users', current_users);
 					
 
-					$.post('actions/actions.php', {
+					$.post('actions.php', {
 						'action' : 'create_fb_settings',
 						'type' : 'groups', 'fb_id' : current_fb_group['group_id'], 
 						'fb_name' : current_fb_group['group_name']
@@ -687,7 +594,7 @@ include('includes/footer.php');
 			current_users[current_user.uid]['settings']['facebook']['pages'][page_id]['page_status'] = page_status;
 			users.set('users', current_users);
 
-			$.post('actions/actions.php', 
+			$.post('actions.php', 
 					{
 						'action' : 'update_fbsetting', 
 						'fb_id' : page_id, 'status' : page_status
@@ -705,7 +612,7 @@ include('includes/footer.php');
 			current_users[current_user.uid]['settings']['facebook']['groups'][group_id]['group_status'] = group_status;
 			users.set('users', current_users);
 
-			$.post('actions/actions.php', 
+			$.post('actions.php', 
 					{
 						'action' : 'update_fbsetting', 
 						'fb_id' : group_id, 'status' : group_status
@@ -786,7 +693,7 @@ include('includes/footer.php');
 			current_users[current_user.uid]['settings']['multipost'] = status;
 			users.set('users', current_users);
 
-			$.post('actions/actions.php', {'action' : 'multipost', 'status' : status});
+			$.post('actions.php', {'action' : 'multipost', 'status' : status});
 		});
 		
 		$('#status').keydown(function(){

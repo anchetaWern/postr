@@ -36,7 +36,7 @@ include('includes/footer.php');
 		};
 		
 		$.post(
-			'actions/actions.php', 
+			'actions.php', 
 			{'action' : 'login', 'email' : user_info.email, 'pword' : user_info.pword},
 			function(data){
 				if(parseInt(data) > 0){
