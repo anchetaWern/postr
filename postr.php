@@ -4,6 +4,7 @@ header('Content-type: text/html; charset=utf-8');
 require_once('includes/header.php');
 require_once('init.php');
 
+
 if(empty($_SESSION['uid'])){
 	header('Location: index.php');
 }
@@ -60,7 +61,7 @@ $user_id = $_SESSION['uid'];
 						<label data-for="facebook">
 							<input type="checkbox" id="facebook">
 							<a href="#" class="facebook_settings">Facebook</a>
-							<a href="<?php echo $fbUrl; ?>">[ <?php echo $fbUrlText; ?> ]</a>
+							<a href="<?php echo $fbUrl; ?>"><?php echo $fbUrlText; ?></a>
 						</label>
 						
 					</p>
@@ -71,15 +72,11 @@ $user_id = $_SESSION['uid'];
 						</label>
 					</p>
 					<p>
-						<label data-for="linked_in">
-							<input type="checkbox" id="linked_in">
-							<a href="auth.php" class="linked_in_settings">LinkedIn</a>
-						</label>
-					</p>
-					<p>
 						<label data-for="twitter">
 							<input type="checkbox" id="twitter">
-							<a href="<?php echo $twitter_login; ?>" class="network_settings">Twitter</a>
+							<a href="#" class="network_settings">Twitter</a>
+							<a href="<?php echo $twitterUrlText; ?>" class="network_settings"><?php echo $twitterUrlText; ?></a>
+							
 						</label>
 					</p>
 				</form>
@@ -152,7 +149,6 @@ $user_id = $_SESSION['uid'];
 <?php
 include('includes/footer.php');
 ?>	
-	<script src="http://connect.facebook.net/en_US/all.js"></script>
 	<script src="libs/foundation/javascripts/jquery.foundation.reveal.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
 	<script src="libs/foundation/javascripts/jquery.foundation.tabs.js"></script>
@@ -193,16 +189,10 @@ include('includes/footer.php');
 				for(var x in current_user.settings){
 					
 					var network = x;
-					var network_status = current_user.settings[x]['status'];
+					var network_status = Number(current_user.settings[x]['status']);
 					
 					if(network_status != 0){
 						$($('#settings_form input[type=checkbox]')[index]).attr('checked', true);
-						
-						switch(network){
-							case 'facebook':
-								fb_login();
-							break;
-						}
 						
 					}
 					index++;
@@ -225,7 +215,7 @@ include('includes/footer.php');
 						"type" : "checkbox", 
 						"id" : page_id, 
 						"class" : "current_fb_pages",
-						"checked" : !!page_status
+						"checked" : !!Number(page_status)
 					});
 					
 					
@@ -250,7 +240,7 @@ include('includes/footer.php');
 						"type" : "checkbox", 
 						"id" : group_id, 
 						"class" : "current_fb_groups",
-						"checked" : !!group_status
+						"checked" : !!Number(group_status)
 					});
 					
 					group_checkbox.appendTo(fb_group);
@@ -278,20 +268,15 @@ include('includes/footer.php');
 
 		$('.gplus_settings').live('click', function(e){
 			e.preventDefault();
-			noty_err.text("Currently there's no write-access to the Google Plus API yet");
+			noty_err.text = "Currently there's no write-access to the Google Plus API yet";
 			noty(noty_err);
 		});
 		
-		$('#back_to_settings').click(function(e){
+		$('#back_to_settings, #settings').click(function(e){
 			e.preventDefault();
 			$('#settings_modal').reveal();
 		});
 		
-		$('#settings').click(function(e){
-			e.preventDefault();
-			$('#settings_modal').reveal();
-		});
-	
 		$('#logout').click(function(e){
 			e.preventDefault();
 			$.post(
@@ -307,24 +292,18 @@ include('includes/footer.php');
 			e.preventDefault();
 			var post_contents = {};
 			var post = $.trim($('#status').val());
+
 			
 			//comma-separated posts; only works for links
 			if(current_user.settings.multipost){
 				var posts = post.split(",");
-				var posts_length = posts.length;
-				for(var i = 0; i <= posts_length; i++){
-					
-					post_contents = {
-						message : posts[i],
-						link : posts[i]
-					};
-					
+		
 					$.post(
 						'actions.php', 
 						{
 							'action' : 'post_status',
-							'status' : post_contents.message,
-							'link' : post_contents.link,
+							'status' : posts,
+							'link' : posts,
 							'file' : ''
 						},
 						function(response){
@@ -335,20 +314,27 @@ include('includes/footer.php');
 							}
 						}
 					);
-				}
+			
 
 			}else{
 			//single post
-		
-				var post_link = get_link(post) || "";
+				var post_link = [];
+				var longUrls = getLongUrls($('#status').val());
 
+				if(longUrls.length > 1){
+					post_link = longUrls;
+				}else{
+					post_link = get_link(post) || "";
+				}
+				
 				$.post(
 					'actions.php', 
 					{
 						'action' : 'post_status',
 						'status' : post,
 						'link' : post_link,
-						'file' : current_file.filename
+						'file' : current_file.filename,
+						'long_urls' : longUrls
 					},
 					function(response){
 						var response_obj = JSON.parse(response);
@@ -381,11 +367,22 @@ include('includes/footer.php');
 		
 		
 		/*facebook*/
-		FB.init({appId: "355248497890497", status: true, cookie: true});
-		
-		var fb_login = function(){
-			FB.login(
-				function(response){
+	  window.fbAsyncInit = function(){
+	    FB.init({
+	      appId      : '355248497890497',
+	      status     : true, // check login status
+	      cookie     : true // enable cookies to allow the server to access the session
+	    });
+
+	
+
+		(function(){
+			FB.getLoginStatus(function(response){
+			  if (response.status === 'connected'){
+			  	
+			  	var fb_id = FB.getUserID();
+
+
 					FB.api({
 					  method : 'fql.multiquery',
 					  queries: {
@@ -458,12 +455,21 @@ include('includes/footer.php');
 							}
 						});
 					});
-				}, 
-				{scope: 'user_about_me,email,read_friendlists,publish_stream,manage_pages,user_groups,user_photos'}
-			);
+			  } 
+		 	});
+				
+		})();
 		
-		};
-		
+	  };
+
+	  
+	  (function(d){
+	     var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+	     if (d.getElementById(id)) {return;}
+	     js = d.createElement('script'); js.id = id; js.async = true;
+	     js.src = "//connect.facebook.net/en_US/all.js";
+	     ref.parentNode.insertBefore(js, ref);
+	   }(document));
 		$('#add_fb_page').click(function(e){
 			e.preventDefault();
 			
@@ -620,72 +626,6 @@ include('includes/footer.php');
 			);
 		});
 		
-		var fb_post = function(post_contents){
-	
-			//post to current users wall
-			if(current_user['settings']['facebook']['status']){
-				FB.api('/me/feed', 'post', post_contents, 
-					function(response){
-						if(!response || response.error){
-							noty_err.text = 'Post to facebook profile was unsuccessful!';
-							noty(noty_err);
-						}
-					}
-				);
-			}
-			
-			//post to pages checked by current user
-			var current_fb_pages = current_user['settings']['facebook']['pages'];
-			for(var page_id in current_fb_pages){
-				var page_name = current_fb_pages[page_id]['page_name'];
-				var page_status = current_fb_pages[page_id]['page_status'];
-				
-				if(!!page_status){
-					FB.api('/' + page_id, {fields: 'access_token'}, function(data){
-						if(data['access_token']){
-							
-							post_contents.access_token = data['access_token'];
-							
-							FB.api(
-								'/' + page_id + '/feed',
-								'post',
-								post_contents,
-								function(response){
-									if(!response || response.error){
-										noty_err.text = 'Post to ' + page_name + ' was unsuccessfull!';
-										noty(noty_err);
-									}
-								}
-							);
-						}
-					});
-				}
-			}
-			
-			//post to groups checked by the current user
-			var current_fb_groups = current_user['settings']['facebook']['groups'];
-			for(var group_id in current_fb_groups){	
-				var group_name 		= current_fb_groups[group_id]['group_name'];
-				var group_status	= current_fb_groups[group_id]['group_status'];
-				
-				if(!!group_status){
-					FB.api(
-						'/137814292939466/feed', 
-						'post', 
-						post_contents, 
-						function(response){
-							if(!response || response.error){
-								noty_err.text = 'Post to ' + group_name + ' was unsuccessfull!';
-								noty(noty_err);
-							}
-						}
-					);
-				}
-				
-			}
-		};
-		
-		
 		$('#multi_post').click(function(){
 			var status = Number(!!$(this).attr('checked'));
 			current_user['settings']['multipost'] = status;
@@ -778,10 +718,21 @@ include('includes/footer.php');
 
 		
 		var remaining_chars = function(){
-			var current_length = $('#status').val().length;
+			var status = $('#status').val();
+			var current_length = status.length;
 			var char_limit = 140;
-			
-			var remaining_char = char_limit - current_length;
+			var shortUrlLength = 20;
+
+			var shortUrlCount = getShortUrlCount(status);
+			var shortUrlTotalLength = shortUrlCount * shortUrlLength;
+
+			var longUrls = getLongUrls(status);
+			var longUrlLength = getLongUrlLength(longUrls);
+			var nonUrlLength = current_length - longUrlLength;
+
+			var totalLength = shortUrlTotalLength + nonUrlLength;
+
+			var remaining_char = char_limit - totalLength;
 			$('#char_limit').text(remaining_char);
 			
 			if(remaining_char <= 10){
@@ -792,14 +743,44 @@ include('includes/footer.php');
 		};
 		
 		var get_link = function(post){
-			var url = '';
-			var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi;
+			var url = ''; 
+			var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi
 			var regex = new RegExp(expression);
 			
 			if(post.match(regex)){
 				url = regex.exec(post)[0]; 
 			}
 			return url;
+		};
+
+		var getShortUrlCount = function(status){
+			var urlcount = 0; 
+			var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi
+			var regex = new RegExp(expression);
+			
+			if(status.match(regex)){
+				urlcount = status.match(regex).length;
+			}
+			return parseInt(urlcount);
+		};
+
+		var getLongUrls = function(status){
+			var longUrls = []; 
+			var expression = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi
+			var regex = new RegExp(expression);
+			
+			if(status.match(regex)){
+				longUrls = status.match(regex);
+			}
+			return longUrls;
+		};
+
+		var getLongUrlLength = function(longUrls){
+			var longUrlLength = 0;
+			for(var n in longUrls){
+				longUrlLength = parseInt(longUrlLength) + longUrls[n].length;
+			}
+			return longUrlLength;
 		};
 		
 		var twitter_limit = function(){

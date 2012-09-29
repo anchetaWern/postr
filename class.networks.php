@@ -91,8 +91,10 @@ class networks{
 	}
 
 	public function getFbLoginUrl(){
-
-		return $this->facebook->getLoginUrl();
+		$scope = "user_about_me,email,read_friendlists,publish_stream,manage_pages,user_groups,user_photos";
+		$redirect_url = "http://127.0.0.1:8020/postr/postr.php";
+		$options = array("scope" => $scope, "redirect_uri" => $redirect_url);
+		return $this->facebook->getLoginUrl($options);
 	}
 
 	public function getFbLogoutUrl(){

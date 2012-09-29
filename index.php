@@ -47,6 +47,9 @@ include('includes/footer.php');
 						window.location.replace('postr.php');
 					}, 1000);
 					
+				}else{
+					noty_err.text = 'Incorrect User Credentials!';
+					noty(noty_err);
 				}
 			}
 		);

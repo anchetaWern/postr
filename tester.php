@@ -6,6 +6,11 @@ require_once('class.db.php');
 $networks = new networks();
 $db = new db();
 $user_id = $_SESSION['uid'];
+
+foreach($_POST['status'] as $row){
+	echo trim($row)."\n";
+}
+/*
 $fbSetting = $db->getNetworkSetting($user_id, 'facebook');
 		$fbGroups = $db->getFbGroups($user_id, 'groups');
 		$fbPages = $db->getFbGroups($user_id, 'pages');

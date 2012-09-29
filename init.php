@@ -1,6 +1,7 @@
 <?php
 require_once('class.networks.php');
 require_once('class.db.php');
+
 $networks = new networks();
 $db = new db();
 
@@ -12,7 +13,8 @@ if($db->hasTwitter($user_id) == 0){ //new user
 		if(!isset($_SESSION['request_secret'])){
 
 		  $networks->setTwitterRequestToken();
-			$twitter_login =  $networks->getTwitterLogin();
+			$twitterUrl =  $networks->getTwitterLogin();
+			$twitterUrlText = ' [Login]';
 		}
 	   
 		if(isset($_GET['oauth_token'], $_GET['oauth_verifier'])){
@@ -23,23 +25,25 @@ if($db->hasTwitter($user_id) == 0){ //new user
 			header('Location: '.$_SERVER['PHP_SELF']);	
 		}
 	}else{
-		$twitter_login = '#';
+		$twitterUrl = '#';
+		$twitterUrlText = '';
 	}
 }else{ //existing user
 	$twitterUser = $db->getTwitterUserTokens($user_id);
 	
 	$_SESSION['twitteruser_token'] 		= $twitterUser['oauth_token'];
 	$_SESSION['twitteruser_secret'] 	= $twitterUser['oauth_secret'];
-	$twitter_login = '#';
+	$twitterUrl = '#';
+	$twitterUrlText = '';
 }	
 
 $fbUrl = "#";
 $fbUrlText = "";
 if($networks->hasFbUser() > 0){ //has a current fb user
-	$fbUrlText = "Logout";
+	$fbUrlText = " [Logout]";
 	$fbUrl = $networks->getFbLogoutUrl();
 }else{
-	$fbUrlText = "Login";
+	$fbUrlText = " [Login]";
 	$fbUrl = $networks->getFbLoginUrl();
 }
 ?>
