@@ -86,18 +86,27 @@ class db{
 					}//end general settings if
 
 					//facebook settings
-					$fb_settings = $this->conn->query("SELECT fb_type, fb_id, fb_name, status FROM tbl_fbsettings WHERE uid = '$uid'");
+					$fb_settings = $this->conn->query("
+						SELECT fb_type, fb_id, fb_name, 
+						img_url, status FROM tbl_fbsettings WHERE uid = '$uid'
+					");
+
 					$fb_settings_data = array();
 					if($fb_settings->num_rows > 0){
 						while($row = $fb_settings->fetch_object()){
 							$fb_type = $row->fb_type;
 							$fb_id = $row->fb_id;
 							$fb_name = $row->fb_name;
+							$img_url = $row->img_url;
 							$status =  $row->status;
 
 							$prefix = substr($fb_type, 0, -1) . '_';
 							
-							$fb_settings_data[$fb_type][$fb_id] = array($prefix."name" => $fb_name, $prefix."status" => $status);
+							$fb_settings_data[$fb_type][$fb_id] = array(
+								$prefix."name" => $fb_name, 
+								"page_img" => $img_url, 
+								$prefix."status" => $status
+							);
 							
 						}
 					}//end facebook settings if
@@ -112,11 +121,11 @@ class db{
 		return $user_settings;
 	}
 
-	public function createFbSetting($user_id, $fb_type, $fb_id, $fb_name){
+	public function createFbSetting($user_id, $fb_type, $fb_id, $fb_name, $img_url = ''){
 
 		$this->conn->query("
 			INSERT INTO tbl_fbsettings SET uid = '$user_id', 
-			fb_type = '$fb_type', fb_id = '$fb_id', fb_name = '$fb_name'
+			fb_type = '$fb_type', fb_id = '$fb_id', fb_name = '$fb_name', img_url = '$img_url'
 		");
 
 		return $this->conn->affected_rows;

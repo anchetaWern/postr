@@ -66,8 +66,9 @@ class networks{
 			
 			$username = $user_info['screen_name'];
 			$oauth_id = $user_info['id'];
+			$user_img = $user_info['profile_image_url'];
 
-			$user = array('username' => $username, 'oauth_id' => $oauth_id);
+			$user = array('username' => $username, 'oauth_id' => $oauth_id, 'user_img' => $user_img);
 			return $user;
 	}
 

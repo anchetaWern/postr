@@ -65,8 +65,9 @@ switch($action){
 		$fb_type = $_POST['type'];
 		$fb_id	= $_POST['fb_id'];
 		$fb_name = $_POST['fb_name'];
+		$img_url = $_POST['img_url'];
 
-		$db->createFbSetting($user_id, $fb_type, $fb_id, $fb_name);
+		$db->createFbSetting($user_id, $fb_type, $fb_id, $fb_name, $img_url);
 
 	break;
 
@@ -153,6 +154,7 @@ function postToNetworks($user_id, $status, $link = '', $file = ''){
 	$fbSetting = $db->getNetworkSetting($user_id, 'facebook');
 	$fbGroups = $db->getFbGroups($user_id, 'groups');
 	$fbPages = $db->getFbGroups($user_id, 'pages');
+	$fbLists = $db->getFbGroups($user_id, 'lists');
 
 	$twitterSetting = $db->getNetworkSetting($user_id, 'twitter');
 
@@ -171,7 +173,7 @@ function postToNetworks($user_id, $status, $link = '', $file = ''){
 
 	$networks->postToFbGroup($fbGroups, $status, $link, $file);
 	$networks->postToFbPage($fbPages, $status, $link, $file);
-
+	$networks->postToFbGroup($fbLists, $status, $link, $file); //list(same structure with groups)
 }
 
 function replaceLongUrls($status, $long_urls, $short_urls){

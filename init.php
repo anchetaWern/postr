@@ -14,7 +14,8 @@ if($db->hasTwitter($user_id) == 0){ //new user
 
 		  $networks->setTwitterRequestToken();
 			$twitterUrl =  $networks->getTwitterLogin();
-			$twitterUrlText = ' [Login]';
+			$twitterUrlText = ' Login';
+			$twitterUserImg = 'img/default.png';
 		}
 	   
 		if(isset($_GET['oauth_token'], $_GET['oauth_verifier'])){
@@ -24,15 +25,17 @@ if($db->hasTwitter($user_id) == 0){ //new user
 
 			header('Location: '.$_SERVER['PHP_SELF']);	
 		}
-	}else{
-		$twitterUrl = '#';
-		$twitterUrlText = '';
 	}
 }else{ //existing user
 	$twitterUser = $db->getTwitterUserTokens($user_id);
 	
 	$_SESSION['twitteruser_token'] 		= $twitterUser['oauth_token'];
 	$_SESSION['twitteruser_secret'] 	= $twitterUser['oauth_secret'];
+
+	$twitterUser = $networks->getTwitterUserInfo();
+	$twitterUserName = $twitterUser['username'];
+	$twitterUserImg  = $twitterUser['user_img'];
+
 	$twitterUrl = '#';
 	$twitterUrlText = '';
 }	
@@ -40,10 +43,10 @@ if($db->hasTwitter($user_id) == 0){ //new user
 $fbUrl = "#";
 $fbUrlText = "";
 if($networks->hasFbUser() > 0){ //has a current fb user
-	$fbUrlText = " [Logout]";
+	$fbUrlText = "";
 	$fbUrl = $networks->getFbLogoutUrl();
 }else{
-	$fbUrlText = " [Login]";
+	$fbUrlText = " Login";
 	$fbUrl = $networks->getFbLoginUrl();
 }
 ?>

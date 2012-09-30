@@ -59,24 +59,30 @@ $user_id = $_SESSION['uid'];
 				<form id="settings_form">
 					<p>
 						<label data-for="facebook">
+							<img id="fb_pic" src="img/default.png" width="48px" height="48px"/>
 							<input type="checkbox" id="facebook">
 							<a href="#" class="facebook_settings">Facebook</a>
-							<a href="<?php echo $fbUrl; ?>"><?php echo $fbUrlText; ?></a>
-						</label>
+							<a href="#" id="facebook_login" class="login_links"><?php echo $fbUrlText; ?></a>
+							<span id="fb_user"></span>
 						
 					</p>
 					<p>
+						</label>
 						<label data-for="gplus">
+							<img id="gplus_pic" src="img/default.png" width="48px" height="48px"/>
 							<input type="checkbox" id="gplus" disabled>
 							<a href="#" class="gplus_settings">Google+</a>
+							<a href="#" id="gplus_login" class="login_links"></a>
+							<span id="gplus_user"></span>
 						</label>
 					</p>
 					<p>
 						<label data-for="twitter">
+							<img id="twitter_pic" src="<?php echo $twitterUserImg; ?>" width="48px" height="48px"/>
 							<input type="checkbox" id="twitter">
 							<a href="#" class="network_settings">Twitter</a>
-							<a href="<?php echo $twitterUrlText; ?>" class="network_settings"><?php echo $twitterUrlText; ?></a>
-							
+							<a href="<?php echo $twitterUrl; ?>" id="twitter_login" class="login_links"> <?php echo $twitterUrlText; ?></a>
+							<span id="twitter_user"><?php echo $twitterUserName; ?></span>
 						</label>
 					</p>
 				</form>
@@ -102,37 +108,53 @@ $user_id = $_SESSION['uid'];
 			<dl class="tabs contained">
 			  <dd class="active"><a href="#pages">Pages</a></dd>
 			  <dd><a href="#groups">Groups</a></dd>
+			  <dd><a href="#list">Lists</a></dd>
 			</dl>
 			
 			<ul class="tabs-content contained">
 			  <li class="active" id="pagesTab">
-				<p>
-					<label for="fb_pages">Pages</label>
-					<input type="text" id="fb_pages"/>
-				</p>
-				<p>
-					<div id="current_fb_pages">
-						
-					</div>
-				</p>
-				<p>
-					<a href="#" id="add_fb_page" class="success button">Add Page</a>
-				</p>
+					<p>
+						<label for="fb_pages">Pages</label>
+						<input type="text" id="fb_pages"/>
+					</p>
+					<p>
+						<div id="current_fb_pages">
+							
+						</div>
+					</p>
+					<p>
+						<a href="#" id="add_fb_page" class="success button create_fb_lists" data-listtype="pages">Add Page</a>
+					</p>
 			  </li>
 			  
 			  <li id="groupsTab">
-				<p>
-					<label for="fb_groups">Groups</label>
-					<input type="text" id="fb_groups"/>
-				</p>
-				<p>
-					<div id="current_fb_groups">
-						
-					</div>
-				</p>
-				<p>
-					<a href="#" id="add_fb_group" class="success button">Add Group</a>
-				</p>
+					<p>
+						<label for="fb_groups">Groups</label>
+						<input type="text" id="fb_groups"/>
+					</p>
+					<p>
+						<div id="current_fb_groups">
+							
+						</div>
+					</p>
+					<p>
+						<a href="#" id="add_fb_group" class="success button create_fb_lists" data-listtype="groups">Add Group</a>
+					</p>
+			  </li>
+
+			  <li id="listTab">
+					<p>
+						<label for="fb_lists">Lists</label>
+						<input type="text" id="fb_lists"/>
+					</p>
+					<p>
+						<div id="current_fb_lists">
+							
+						</div>
+					</p>
+					<p>
+						<a href="#" id="add_fb_list" class="success button create_fb_lists" data-listtype="lists">Add List</a>
+					</p>
 			  </li>
 			</ul>
 			
@@ -159,7 +181,9 @@ include('includes/footer.php');
 		var current_user = {};
 		var current_fb_page = {};
 		var current_fb_group = {};
+		var current_fb_list = {};
 		var current_file = {};
+
 		
 		$('#status').val("");
 	
@@ -174,7 +198,7 @@ include('includes/footer.php');
 					$.post('actions.php', {'action' : 'load_settings'}, function(data){
   					var user_settings = JSON.parse(data);
   					current_users = user_settings;
-
+  					
   					current_user.settings = current_users[current_user.uid]['settings'];
   					users.set('users', current_users);
 					});
@@ -182,8 +206,7 @@ include('includes/footer.php');
 					current_user.settings = users.get('users')[current_user.uid]['settings'];
 				}
 				
-				
-				$('#multi_post').attr('checked', !!current_user.settings.multipost);
+				$('#multi_post').attr('checked', !!parseInt(current_user.settings.multipost));
 				
 				var index = 0;
 				for(var x in current_user.settings){
@@ -197,62 +220,44 @@ include('includes/footer.php');
 					}
 					index++;
 				}
-				
-				/*load current facebook pages*/
+
+
 				var fb_pages = current_user.settings.facebook.pages;
-				var fb_pages_container = $('#current_fb_pages');
-				
-				
-				for(var x in fb_pages){
-					var page_id = x;
-					
-					var fb_page = $("<div>");
-					var page_img = $("<img>").attr("src", fb_pages[page_id]['page_img']);
-					var page_name = $("<span>").text(fb_pages[page_id]['page_name']);
-					var page_status = fb_pages[page_id]['page_status'];
-					
-					var page_checkbox = $("<input>").attr({
-						"type" : "checkbox", 
-						"id" : page_id, 
-						"class" : "current_fb_pages",
-						"checked" : !!Number(page_status)
-					});
-					
-					
-					page_img.appendTo(fb_page);
-					page_checkbox.appendTo(fb_page);
-					page_name.appendTo(fb_page);
-					
-					fb_pages_container.append(fb_page);
-				}
-				
-				/*load current facebook groups*/
 				var fb_groups = current_user.settings.facebook.groups;
-				var fb_groups_container = $('#current_fb_groups');
-				
-				for(var x in fb_groups){
-					var group_id = x;
-					var fb_group = $("<div>");
-					var group_name = $("<span>").text(fb_groups[group_id]['group_name']);
-					var group_status = fb_groups[group_id]['group_status'];
-					
-					var group_checkbox = $("<input>").attr({
-						"type" : "checkbox", 
-						"id" : group_id, 
-						"class" : "current_fb_groups",
-						"checked" : !!Number(group_status)
-					});
-					
-					group_checkbox.appendTo(fb_group);
-					group_name.appendTo(fb_group);
-					
-					fb_groups_container.append(fb_group);
-				}
-				
+				var fb_lists = current_user.settings.facebook.lists;
+
+				createFbLists(fb_pages, 'current_fb_pages', 'page', 'current_fb_pages');
+				createFbLists(fb_groups, 'current_fb_groups', 'group', 'current_fb_groups');
+				createFbLists(fb_lists, 'current_fb_lists', 'list', 'current_fb_lists');
 				
 				twitter_limit();
+
 			}
 		);
+
+		var createFbLists = function(listData, container, prefix, listClass){
+			var listContainer = $('#' + container);
+			for(var x in listData){
+				var list_id = x;
+				var fb_list = $("<div>");
+				var list_name = $("<span>").text(listData[list_id][prefix + '_name']);
+				var list_status = listData[list_id][prefix + '_status'];
+				
+				var list_checkbox = $("<input>").attr({
+					"type" : "checkbox", 
+					"id" : list_id, 
+					"class" : listClass,
+					"checked" : !!Number(list_status),
+					"data-listtype" : prefix + 's'
+				}).addClass('fblist');
+				
+				list_checkbox.appendTo(fb_list);
+				list_name.appendTo(fb_list);
+				
+				listContainer.append(fb_list);
+			}
+		};
+
 		
 		if(!users.get('users')){
 			//set users if it doesn't exists yet
@@ -379,9 +384,11 @@ include('includes/footer.php');
 		(function(){
 			FB.getLoginStatus(function(response){
 			  if (response.status === 'connected'){
-			  	
 			  	var fb_id = FB.getUserID();
-
+			  	FB.api('/me', function(user){
+  					$('#fb_user').text(user.name);
+  					$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ fb_id +'/picture?type=square');
+					});
 
 					FB.api({
 					  method : 'fql.multiquery',
@@ -455,6 +462,32 @@ include('includes/footer.php');
 							}
 						});
 					});
+
+					FB.api('/me/friendlists', function(friendlists){
+  					var user_friendlist = friendlists.data;
+  					var data_source = [];
+
+  					for(var index in user_friendlist){
+  						var list_id = user_friendlist[index]['id'];
+  						var list_name = user_friendlist[index]['name'];
+
+  						data_source.push({
+  							'value' : list_name,
+  							'list_id' : list_id,
+  							'list_name' : list_name	
+  						});
+  					}
+
+  					$('#fb_lists').autocomplete({
+  						source: data_source,
+  						select: function(event, ui){
+  							current_fb_list['list_id'] = ui['item']['list_id'];
+								current_fb_list['list_name'] = ui['item']['list_name'];
+  						}
+  					});
+
+					});
+
 			  } 
 		 	});
 				
@@ -470,125 +503,131 @@ include('includes/footer.php');
 	     js.src = "//connect.facebook.net/en_US/all.js";
 	     ref.parentNode.insertBefore(js, ref);
 	   }(document));
-		$('#add_fb_page').click(function(e){
+
+		$('#facebook_login').click(function(e){
 			e.preventDefault();
-			
-			if(!current_user.settings.facebook.pages){
-				current_user.settings.facebook.pages = {};
+			FB.login(function(response){
+				if(response.authResponse){
+					FB.api('/me', function(user){
+						$('#facebook_login').hide();
+						$('#fb_user').text(user.name);
+					});
+				}
+			});
+		});
+
+		var addFbList = function(fbLists, selectedFbList, listContainer, inputId, fbListType, fbClass, fbImage, prefix){
+			if(!fbLists){
+				fbLists = {};
 			}
-			
-			if(!!!current_user.settings.facebook.pages[current_fb_page['page_id']]){
-				$('#fb_pages').val('');
+
+			//check if list has already been added before
+			if(!!!fbLists[selectedFbList[fbListType + '_name']]){
+				//list doesn't exist yet
+				$('#' + inputId).val('');
+
+				var current_fb_list = $('#' + listContainer);
+				var fb_list = $("<div>");
+
+				if(fbImage){
+					var list_img = $("<img>").attr("src", selectedFbList[fbListType + '_pic']);
+				}
 				
-				var current_fb_pages = $('#current_fb_pages');
-				var fb_page = $("<div>");
-				
-				var page_img = $("<img>").attr("src", current_fb_page['page_pic']);
-				var page_name = $("<span>").text(current_fb_page['page_name']);
-				var page_checkbox = $("<input>").attr({
+				var list_name = $("<span>").text(selectedFbList[fbListType + '_name']);
+				var list_checkbox = $("<input>").attr({
 					"type" : "checkbox", 
-					"id" : current_fb_page['page_id'], 
-					"class" : "current_fb_pages",
+					"id" : selectedFbList[fbListType + '_id'], 
+					"class" : fbClass,
 					"checked" : true
 				});
-				
-				fb_page.append(page_img);
-				fb_page.append(page_checkbox);
-				fb_page.append(page_name);
-				
-				current_fb_pages.append(fb_page);
-				
-				if(!current_user['settings']['facebook']['pages']){
-					current_user['settings']['facebook']['pages'] = {};
-				}
-				
-				current_user['settings']['facebook']['pages'][current_fb_page['page_id']] = {
-					"page_name" : current_fb_page['page_name'], 
-					"page_img" : current_fb_page['page_pic']
-				};
-				
-				if(!current_users[current_user.uid]['settings']['facebook']['pages']){
-					current_users[current_user.uid]['settings']['facebook']['pages'] = {};
-				}
-				
-				current_users[current_user.uid]['settings']['facebook']['pages'][current_fb_page['page_id']] = {
-					"page_name" : current_fb_page['page_name'], 
-					"page_img" : current_fb_page['page_pic'],
-					"page_status" : 1
-				};
-				
-				users.set('users', current_users);
-				
-				$.post('actions.php', {
-						'action' : 'create_fb_settings',
-						'type' : 'pages', 'fb_id' : current_fb_page['page_id'], 
-						'fb_name' : current_fb_page['page_name']
-				});
 
-				noty_success.text = 'Facebook Page Successfully Added!';
+				if(fbImage){
+					fb_list.append(list_img);
+				}
+				
+				fb_list.append(list_checkbox);
+				fb_list.append(list_name);
+				
+				current_fb_list.append(fb_list);
+
+				buildFbListSetting(prefix, selectedFbList, fbListType, fbImage); //saves into local storage
+				createFbSetting(selectedFbList, fbListType, prefix); //saves into database
+
+				noty_success.text = fbListType + " successfully added!";
 				noty(noty_success);
-			}else{
-				noty_err.text = 'The selected Facebook Page has already been added before!';
+			}else{ 
+				//list already exists
+				noty_err.text = fbListType + " has already been added before!";
 				noty(noty_err);
+			}		
+		};
+
+		var buildFbListSetting = function(prefix, selectedFbList, fbListType , fbImage){
+
+			if(!current_user['settings']['facebook'][prefix]){
+				current_user['settings']['facebook'][prefix] = {};
 			}
-		});
-		
-		$('#add_fb_group').click(function(e){
+			
+			//update the current user
+			var temp_userSettings = current_user['settings']['facebook'][prefix];
+
+			temp_userSettings[selectedFbList[fbListType + '_id']] = {};
+			temp_userSettings[selectedFbList[fbListType + '_id']][fbListType + "_name"] = selectedFbList[fbListType + '_name'];
+			temp_userSettings[selectedFbList[fbListType + '_id']][fbListType + "_status"] = 1;
+
+			if(fbImage){
+				temp_userSettings[fbListType + "_img"] = selectedFbList[fbListType + '_pic'];
+			}
+
+			//copy the thing back
+			current_user['settings']['facebook'][fbListType] = temp_userSettings;
+
+
+			//if this is the first list to be added to local storage initialize it
+			if(!current_users[current_user.uid]['settings']['facebook'][prefix]){
+				current_users[current_user.uid]['settings']['facebook'][prefix] = {};
+			}
+
+			//update local storage
+			current_users[current_user.uid]['settings']['facebook'][prefix] = temp_userSettings;
+
+			users.set('users', current_users);
+		};
+
+
+		var createFbSetting = function(selectedFbList, fbListType, prefix){
+
+			$.post('actions.php', {
+					'action' : 'create_fb_settings',
+					'type' : prefix,
+					'fb_id' : selectedFbList[fbListType + '_id'], 
+					'fb_name' : selectedFbList[fbListType + '_name'],
+					'img_url' : selectedFbList[fbListType + '_pic']
+			});
+
+		};
+
+		$('.create_fb_lists').click(function(e){
 			e.preventDefault();
-				if(!current_user.settings.facebook.groups){
-					current_user.settings.facebook.groups = {};
-				}
-				
-				if(!!!current_user.settings.facebook.groups[current_fb_group['group_id']]){
-					$('#fb_groups').val('');
-					
-					var current_fb_groups = $('#current_fb_groups');
-					var fb_group = $("<div>");
-					
-					var group_name = $("<span>").text(current_fb_group['group_name']);
-					var group_checkbox = $("<input>").attr({
-						"type" : "checkbox", 
-						"id" : current_fb_group['group_id'], 
-						"class" : "current_fb_groups",
-						"checked" : true
-					});
-					
-					fb_group.append(group_checkbox);
-					fb_group.append(group_name);
-					
-					current_fb_groups.append(fb_group);
-					
-					if(!current_user['settings']['facebook']['groups']){
-						current_user['settings']['facebook']['groups'] = {};
-					}
-					
-					current_user['settings']['facebook']['groups'][current_fb_group['group_id']] = {
-						"group_name" : current_fb_group['group_name']
-					};
-					
-					if(!current_users[current_user.uid]['settings']['facebook']['groups']){
-						current_users[current_user.uid]['settings']['facebook']['groups'] = {};
-					}
-					
-					current_users[current_user.uid]['settings']['facebook']['groups'][current_fb_group['group_id']] = {
-						"group_name" : current_fb_group['group_name'],
-						"group_status" : 1
-					};
-					users.set('users', current_users);
-					
+			var listType = $(this).data('listtype');
+			var listTypeLen = listType.length;
+			var listTypeNos = listType.substring(listTypeLen - 1, -1);
+			
 
-					$.post('actions.php', {
-						'action' : 'create_fb_settings',
-						'type' : 'groups', 'fb_id' : current_fb_group['group_id'], 
-						'fb_name' : current_fb_group['group_name']
-					});
+			var fbLists = current_user.settings.facebook[listType];
+			var selectedFbList = window['current_fb_' + listTypeNos];
+			
+			var listContainer = 'current_fb_' +  listType;
+			var fbClass = listContainer;
 
-					noty_success.text = 'Facebook Group Successfully Added!';
-					noty(noty_success);
-				}else{
-					noty_err.text = 'The selected Facebook Group has already been added before!';
-					noty(noty_err);
-				}
+			var fbImage = 1;
+			if(listType != 'pages'){
+				fbImage = 0;
+			}
+
+			var inputId = 'fb_' + listType;
+
+			addFbList(fbLists, selectedFbList, listContainer, inputId, listTypeNos, fbClass, fbImage, listType);
 		});
 		
 		$('.current_fb_pages').live('click', function(){
@@ -609,22 +648,30 @@ include('includes/footer.php');
 
 		});
 		
-		$('.current_fb_groups').live('click', function(){
+		$('.fblist').live('click', function(){
 			//change status whether to post to the currently selected facebook group or not
-			var group_id = $(this).attr('id');
-			var group_status = Number(!!$(this).attr('checked'));
-			current_user['settings']['facebook']['groups'][group_id]['group_status'] = group_status; 
+			var list_id = $(this).attr('id');
+			var list_status = Number(!!$(this).attr('checked'));
+			var list_type = $(this).data('listtype');
+			var prefix = list_type.substr(list_type.length - 1, -1);
+
+			updateFbListStatus(list_type, prefix, list_id, list_status);
+		});
+
+		var updateFbListStatus = function(listType, prefix, listId, listStatus){
+
+			current_user['settings']['facebook'][listType][listId][prefix + '_status'] = listStatus; 
 			
-			current_users[current_user.uid]['settings']['facebook']['groups'][group_id]['group_status'] = group_status;
+			current_users[current_user.uid]['settings']['facebook'][listType][listId]['group_status'] = listStatus;
 			users.set('users', current_users);
 
 			$.post('actions.php', 
 					{
 						'action' : 'update_fbsetting', 
-						'fb_id' : group_id, 'status' : group_status
+						'fb_id' : listId, 'status' : listStatus
 					}
 			);
-		});
+		};
 		
 		$('#multi_post').click(function(){
 			var status = Number(!!$(this).attr('checked'));
