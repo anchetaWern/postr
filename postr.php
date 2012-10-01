@@ -201,39 +201,41 @@ include('includes/footer.php');
   					
   					current_user.settings = current_users[current_user.uid]['settings'];
   					users.set('users', current_users);
+  					loadSettings();
 					});
 				}else{
 					current_user.settings = users.get('users')[current_user.uid]['settings'];
+					loadSettings();
 				}
-				
-				$('#multi_post').attr('checked', !!parseInt(current_user.settings.multipost));
-				
-				var index = 0;
-				for(var x in current_user.settings){
-					
-					var network = x;
-					var network_status = Number(current_user.settings[x]['status']);
-					
-					if(network_status != 0){
-						$($('#settings_form input[type=checkbox]')[index]).attr('checked', true);
-						
-					}
-					index++;
-				}
-
-
-				var fb_pages = current_user.settings.facebook.pages;
-				var fb_groups = current_user.settings.facebook.groups;
-				var fb_lists = current_user.settings.facebook.lists;
-
-				createFbLists(fb_pages, 'current_fb_pages', 'page', 'current_fb_pages');
-				createFbLists(fb_groups, 'current_fb_groups', 'group', 'current_fb_groups');
-				createFbLists(fb_lists, 'current_fb_lists', 'list', 'current_fb_lists');
-				
-				twitter_limit();
-
 			}
 		);
+
+		var loadSettings = function(){
+			$('#multi_post').attr('checked', !!parseInt(current_user.settings.multipost));
+				
+			var index = 0;
+			for(var x in current_user.settings){
+				
+				var network = x;
+				var network_status = Number(current_user.settings[x]['status']);
+				
+				if(network_status != 0){
+					$($('#settings_form input[type=checkbox]')[index]).attr('checked', true);
+					
+				}
+				index++;
+			}
+
+			var fb_pages = current_user.settings.facebook.pages;
+			var fb_groups = current_user.settings.facebook.groups;
+			var fb_lists = current_user.settings.facebook.lists;
+
+			createFbLists(fb_pages, 'current_fb_pages', 'page', 'current_fb_pages');
+			createFbLists(fb_groups, 'current_fb_groups', 'group', 'current_fb_groups');
+			createFbLists(fb_lists, 'current_fb_lists', 'list', 'current_fb_lists');
+			
+			twitter_limit();
+		};
 
 		var createFbLists = function(listData, container, prefix, listClass){
 			var listContainer = $('#' + container);
@@ -297,16 +299,17 @@ include('includes/footer.php');
 			e.preventDefault();
 			var post_contents = {};
 			var post = $.trim($('#status').val());
-
+			var fbLoginStatus = getFbLoginStatus();
 			
 			//comma-separated posts; only works for links
-			if(current_user.settings.multipost){
+			if(parseInt(current_user.settings.multipost)){
 				var posts = post.split(",");
 		
 					$.post(
 						'actions.php', 
 						{
 							'action' : 'post_status',
+							'fb_login_status' : fbLoginStatus,
 							'status' : posts,
 							'link' : posts,
 							'file' : ''
@@ -326,16 +329,19 @@ include('includes/footer.php');
 				var post_link = [];
 				var longUrls = getLongUrls($('#status').val());
 
+
 				if(longUrls.length > 1){
 					post_link = longUrls;
 				}else{
 					post_link = get_link(post) || "";
 				}
-				
+
+
 				$.post(
 					'actions.php', 
 					{
 						'action' : 'post_status',
+						'fb_login_status' : fbLoginStatus,
 						'status' : post,
 						'link' : post_link,
 						'file' : current_file.filename,
@@ -349,6 +355,7 @@ include('includes/footer.php');
 						}
 					}
 				);
+ 
 			}
 		});
 		
@@ -515,6 +522,14 @@ include('includes/footer.php');
 				}
 			});
 		});
+
+		var getFbLoginStatus = function(){
+			var fbLoginStatus = 'not_connected';
+			FB.getLoginStatus(function(response){
+				fbLoginStatus = response.status;
+			});
+			return fbLoginStatus;
+		};
 
 		var addFbList = function(fbLists, selectedFbList, listContainer, inputId, fbListType, fbClass, fbImage, prefix){
 			if(!fbLists){
@@ -733,12 +748,16 @@ include('includes/footer.php');
 										
 											noty_err.text = response_data['response'];
 											noty(noty_err);
+
+											current_file.filename = "";
+											remaining_chars();
 											
 										}else{
 											noty_success.text = response_data['response'];
 											noty(noty_success);
 											
 											current_file.filename = response_data['filename'];
+											remaining_chars();
 										}
 									}  
 								});  
@@ -748,6 +767,9 @@ include('includes/footer.php');
 					}else{
 						noty_err.text = 'The uploaded file was not an image!';
 						noty(noty_err);
+						current_file.filename = "";
+						$('#file_to_upload').empty();
+						remaining_chars();
 					}
 				}
 			})(); 
@@ -765,10 +787,12 @@ include('includes/footer.php');
 
 		
 		var remaining_chars = function(){
+			
 			var status = $('#status').val();
 			var current_length = status.length;
 			var char_limit = 140;
 			var shortUrlLength = 20;
+			var uploadfile = $('#file_to_upload').children().length;
 
 			var shortUrlCount = getShortUrlCount(status);
 			var shortUrlTotalLength = shortUrlCount * shortUrlLength;
@@ -779,7 +803,12 @@ include('includes/footer.php');
 
 			var totalLength = shortUrlTotalLength + nonUrlLength;
 
-			var remaining_char = char_limit - totalLength;
+			if(uploadfile == 1){
+				var remaining_char = char_limit - totalLength - 21;
+			}else{
+				var remaining_char = char_limit - totalLength;
+			}
+			
 			$('#char_limit').text(remaining_char);
 			
 			if(remaining_char <= 10){

@@ -99,6 +99,7 @@ switch($action){
 
 		$user_id = $_SESSION['uid'];
 		$status = $_POST['status'];
+		$fbLoginStatus = $_POST['fb_login_status'];
 
 		$longUrls = '';
 		if(isset($_POST['long_urls'])){
@@ -125,12 +126,12 @@ switch($action){
 					$post = $googl->createShortcut($post);
 					
 				}
-				postToNetworks($user_id, $post, $post);
+				postToNetworks($user_id, $post, $fbLoginStatus, $post);
 			}
 			
 		}else{ //single post (can contain text with one or more links)
 			
-			postToNetworks($user_id, $status, $link, $file);
+			postToNetworks($user_id, $status, $fbLoginStatus, $link, $file);
 		}	
 
 
@@ -147,7 +148,7 @@ switch($action){
 	break;
 }
 
-function postToNetworks($user_id, $status, $link = '', $file = ''){
+function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = ''){
 	global $db;
 	global $networks;
 
@@ -159,7 +160,7 @@ function postToNetworks($user_id, $status, $link = '', $file = ''){
 	$twitterSetting = $db->getNetworkSetting($user_id, 'twitter');
 
 	if($db->hasTwitter($user_id) > 0 && $twitterSetting == 1){
-		$networks->tweet(
+		$res = $networks->tweet(
 			$_SESSION['twitteruser_token'], 
 			$_SESSION['twitteruser_secret'], 
 			$status, 
@@ -167,13 +168,16 @@ function postToNetworks($user_id, $status, $link = '', $file = ''){
 		);
 	}
 
-	if($fbSetting == 1){
-		$networks->postToFbProfile($status, $link, $file);
+	if($fbloginstatus == 'connected'){
+		if($fbSetting == 1){
+			$networks->postToFbProfile($status, $link, $file);
+		}
+
+		$networks->postToFbGroup($fbGroups, 'groups', $status, $link, $file);
+		$networks->postToFbPage($fbPages, $status, $link, $file);
+		$networks->postToFbGroup($fbLists, 'lists', $status, $link, $file); //list(same structure with groups)
 	}
 
-	$networks->postToFbGroup($fbGroups, $status, $link, $file);
-	$networks->postToFbPage($fbPages, $status, $link, $file);
-	$networks->postToFbGroup($fbLists, $status, $link, $file); //list(same structure with groups)
 }
 
 function replaceLongUrls($status, $long_urls, $short_urls){

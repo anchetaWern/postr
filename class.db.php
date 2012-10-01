@@ -199,7 +199,7 @@ class db{
 				$fb_name = $group->fb_name;
 				$status = $group->status;
 
-				$groups[] = array('fb_id' => $fb_id, "fb_name" => $fb_name, "status" => $status);
+				$groups[] = array("fb_id" => $fb_id, "fb_name" => $fb_name, "status" => $status);
 			}
 		}
 

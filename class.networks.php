@@ -115,15 +115,23 @@ class networks{
 		
 	}
 
-	public function postToFbGroup($groups, $status, $link = '', $file = ''){
+	public function postToFbGroup($groups, $groupType, $status, $link = '', $file = ''){
 		$this->facebook->setFileUploadSupport(true);
 		$postContents = $this->getFbStatus($status, $link, $file);
 
 		foreach($groups as $group){
 			$group_id = $group['fb_id'];
 			$group_status = $group['status'];
-			
-			if($group_status == 1){
+
+			if($groupType == 'groups'){
+
+				$isAGroupMember = $this->FBGroupMemberCount($group_id);
+			}else{
+
+				$isAGroupMember = $this->FBFriendListCount($group_id);
+			}
+
+			if($group_status == 1 && $isAGroupMember){
 				if($file != ''){
 					$response = $this->facebook->api("/$group_id/photos", "post", $postContents);
 				}else{
@@ -140,10 +148,13 @@ class networks{
 		$postContents = $this->getFbStatus($status, $link, $file);
 
 		foreach($pages as $page){
+
 			$page_id = $page['fb_id'];
 			$page_status = $page['status'];
+			$isAPageFan = $this->FBPageFanCount($page_id);
+			$isAPageAdmin = $this->FBPageAdminCount($page_id);
 
-			if($page_status == 1){
+			if($page_status == 1 && ($isAPageAdmin || $isAPageFan)){
 				$page_data = $this->facebook->api("/$page_id", array("fields" => "access_token"));
 				$page_access_token = $page_data['access_token'];
 				
@@ -157,6 +168,42 @@ class networks{
 				
 			}
 		}
+	}
+
+	public function FBGroupMemberCount($fbGroupID){
+		
+		$groupMember = $this->facebook->api(array(
+			"method" => "fql.query",
+			"query" => "SELECT gid, uid FROM group_member WHERE gid = '$fbGroupID' AND uid = me()"
+		));
+		return count($groupMember);
+	}
+
+	public function FBPageFanCount($fbPageID){
+
+		$pageLiked = $this->facebook->api(array(
+			"method" => "fql.query",
+			"query" => "SELECT page_id FROM page_fan WHERE uid = me() AND page_id = '$fbPageID'"
+		));
+		return count($pageLiked);
+	}
+
+	public function FBPageAdminCount($fbPageID){
+
+		$pageAdmin = $this->facebook->api(array(
+			"method" => "fql.query",
+			"query" => "SELECT page_id FROM page_admin WHERE uid = me() AND page_id = '$fbPageID'"
+		));
+		return count($pageAdmin);
+	}
+
+	public function FBFriendListCount($fbListID){
+
+		$friendlist = $this->facebook->api(array(
+			"method" => "fql.query",
+			"query" => "SELECT flid FROM friendlist WHERE owner = me() AND flid = '$fbListID'"
+		));
+		return count($friendlist);
 	}
 
 	public function getFbStatus($status, $link = '', $file = ''){
