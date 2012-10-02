@@ -461,13 +461,7 @@ include('includes/footer.php');
 							);
 						}
 						
-						$('#fb_groups').autocomplete({
-							source: data_source,
-							select: function(event, ui){
-								current_fb_group['group_id'] = ui['item']['group_id'];
-								current_fb_group['group_name'] = ui['item']['group_name'];
-							}
-						});
+						loadFbAutocomplete('fb_groups', 'group', JSON.stringify(data_source), current_fb_group);
 					});
 
 					FB.api('/me/friendlists', function(friendlists){
@@ -485,13 +479,8 @@ include('includes/footer.php');
   						});
   					}
 
-  					$('#fb_lists').autocomplete({
-  						source: data_source,
-  						select: function(event, ui){
-  							current_fb_list['list_id'] = ui['item']['list_id'];
-								current_fb_list['list_name'] = ui['item']['list_name'];
-  						}
-  					});
+  					
+  					loadFbAutocomplete('fb_lists', 'list', JSON.stringify(data_source), current_fb_list);
 
 					});
 
@@ -502,6 +491,15 @@ include('includes/footer.php');
 		
 	  };
 
+	  var loadFbAutocomplete = function(autocompleteID, prefix, dataSource, currentList){
+	  	$('#' + autocompleteID).autocomplete({
+				source: JSON.parse(dataSource),
+				select: function(event, ui){
+					currentList[prefix + '_id'] = ui['item'][prefix + '_id'];
+					currentList[prefix + '_name'] = ui['item'][prefix + '_name'];
+				}
+			});
+	  };
 	  
 	  (function(d){
 	     var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
@@ -537,7 +535,7 @@ include('includes/footer.php');
 			}
 
 			//check if list has already been added before
-			if(!!!fbLists[selectedFbList[fbListType + '_name']]){
+			if(!!!fbLists[selectedFbList[fbListType + '_id']]){
 				//list doesn't exist yet
 				$('#' + inputId).val('');
 
@@ -553,8 +551,9 @@ include('includes/footer.php');
 					"type" : "checkbox", 
 					"id" : selectedFbList[fbListType + '_id'], 
 					"class" : fbClass,
-					"checked" : true
-				});
+					"checked" : true,
+					"data-listtype" : prefix,
+				}).addClass('fblist');
 
 				if(fbImage){
 					fb_list.append(list_img);
