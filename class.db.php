@@ -167,6 +167,18 @@ class db{
 	
 	}
 
+	public function createOauth($user_id, $oauth_id, $provider, $oauth_token = '', $oauth_secret = '', $username = ''){
+
+		$this->conn->query("
+			INSERT INTO tbl_oauth SET user_id = '$user_id', 
+			oauth_id = '$oauth_id', provider = '$provider',
+			oauth_token = '$oauth_token', oauth_secret = '$oauth_secret',
+			username = '$username'
+		");	
+
+		return $this->conn->affected_rows;
+	}
+
 	public function getTwitterUserTokens($user_id){
 
 		$tokens = array();
@@ -189,7 +201,7 @@ class db{
 		$groups = array();
 		$selectGroups = $this->conn->query("
 			SELECT fb_id, fb_name, status FROM tbl_fbsettings WHERE uid = '$user_id' 
-			AND fb_type = '$group_type'
+			AND fb_type = '$group_type' AND status  = 1
 		");
 
 		if($selectGroups->num_rows > 0){
@@ -197,9 +209,8 @@ class db{
 
 				$fb_id = $group->fb_id;
 				$fb_name = $group->fb_name;
-				$status = $group->status;
 
-				$groups[] = array("fb_id" => $fb_id, "fb_name" => $fb_name, "status" => $status);
+				$groups[] = array("fb_id" => $fb_id, "fb_name" => $fb_name);
 			}
 		}
 

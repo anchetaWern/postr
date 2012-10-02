@@ -3,6 +3,7 @@ include('includes/header.php');
 ?>
 	<body>
 		<div class="container">
+			<img src="assets/ajax-loader.gif" id="ajaxloader" style="display:none;"/>
 			<div class="app_title">
 				<img src="img/postr.png"/>
 				<h2>Postr</h2>
@@ -15,7 +16,7 @@ include('includes/header.php');
 				  <label for="pword">Password</label>
 				  <input type="password" name="pword" id="pword"/>
 				  
-				  
+				 
 				  <a href="#" id="login" class="success button">Login</a>
 				  <a href="signup.php">Signup</a>
 				</form> 
@@ -35,6 +36,8 @@ include('includes/footer.php');
 			pword : $.trim($('#pword').val())
 		};
 		
+		ajaxLoad();
+
 		$.post(
 			'actions.php', 
 			{'action' : 'login', 'email' : user_info.email, 'pword' : user_info.pword},
@@ -43,6 +46,7 @@ include('includes/footer.php');
 					noty_success.text = 'Login Successfull!';
 					noty(noty_success);
 					
+					ajaxDone();
 					setTimeout(function(){
 						window.location.replace('postr.php');
 					}, 1000);
@@ -50,6 +54,8 @@ include('includes/footer.php');
 				}else{
 					noty_err.text = 'Incorrect User Credentials!';
 					noty(noty_err);
+
+					ajaxDone();
 				}
 			}
 		);

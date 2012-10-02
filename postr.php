@@ -14,6 +14,7 @@ $user_id = $_SESSION['uid'];
 	<body>
 		<div class="container">
 			<span class="logout"><a id="logout" href="#"><?php echo $_SESSION['email']; ?> [Logout]</a></span>
+			<img src="assets/ajax-loader.gif" id="ajaxloader" style="display:none;"/>
 			<div class="app_title">
 				<img src="img/postr.png"/>
 				<h2><a href="postr.php" class="link">Postr</a></h2>
@@ -66,22 +67,15 @@ $user_id = $_SESSION['uid'];
 							<span id="fb_user"></span>
 						
 					</p>
-					<p>
-						</label>
-						<label data-for="gplus">
-							<img id="gplus_pic" src="img/default.png" width="48px" height="48px"/>
-							<input type="checkbox" id="gplus" disabled>
-							<a href="#" class="gplus_settings">Google+</a>
-							<a href="#" id="gplus_login" class="login_links"></a>
-							<span id="gplus_user"></span>
-						</label>
-					</p>
+					
 					<p>
 						<label data-for="twitter">
 							<img id="twitter_pic" src="<?php echo $twitterUserImg; ?>" width="48px" height="48px"/>
 							<input type="checkbox" id="twitter">
 							<a href="#" class="network_settings">Twitter</a>
-							<a href="<?php echo $twitterUrl; ?>" id="twitter_login" class="login_links"> <?php echo $twitterUrlText; ?></a>
+							<a href="<?php echo $twitterUrl; ?>" id="twitter_login" class="login_links"> 
+								<?php echo $twitterUrlText; ?>
+							</a>
 							<span id="twitter_user"><?php echo $twitterUserName; ?></span>
 						</label>
 					</p>
@@ -218,8 +212,8 @@ include('includes/footer.php');
 				
 				var network = x;
 				var network_status = Number(current_user.settings[x]['status']);
-				
-				if(network_status != 0){
+				console.log(network + " " +network_status + " " + index);
+				if(network_status > 0){
 					$($('#settings_form input[type=checkbox]')[index]).attr('checked', true);
 					
 				}
@@ -273,12 +267,6 @@ include('includes/footer.php');
 			$('#facebook_modal').reveal();
 		});
 
-		$('.gplus_settings').live('click', function(e){
-			e.preventDefault();
-			noty_err.text = "Currently there's no write-access to the Google Plus API yet";
-			noty(noty_err);
-		});
-		
 		$('#back_to_settings, #settings').click(function(e){
 			e.preventDefault();
 			$('#settings_modal').reveal();
@@ -300,11 +288,14 @@ include('includes/footer.php');
 			var post_contents = {};
 			var post = $.trim($('#status').val());
 			var fbLoginStatus = getFbLoginStatus();
+
+			checkNetworks();
+			ajaxLoad();
 			
 			//comma-separated posts; only works for links
 			if(parseInt(current_user.settings.multipost)){
 				var posts = post.split(",");
-		
+					
 					$.post(
 						'actions.php', 
 						{
@@ -315,11 +306,17 @@ include('includes/footer.php');
 							'file' : ''
 						},
 						function(response){
-							var response_obj = JSON.parse(response);
-							if(response_obj['error']){
-								noty_err.text = response_obj['error_message'];
+							
+							if(response != ""){
+								noty_err.text = response;
 								noty(noty_err);
+								
+							}else{
+								noty_success.text = "Status update successfuly posted!";
+								noty(noty_success);
 							}
+
+							ajaxDone();
 						}
 					);
 			
@@ -348,16 +345,32 @@ include('includes/footer.php');
 						'long_urls' : longUrls
 					},
 					function(response){
-						var response_obj = JSON.parse(response);
-						if(response_obj['error']){
-							noty_err.text = response_obj['error_message'];
+						
+						if(response != ""){
+							noty_err.text = response;
 							noty(noty_err);
+							
+						}else{
+							noty_success.text = "Status update successfuly posted!";
+							noty(noty_success);
 						}
+						ajaxDone();
 					}
 				);
  
 			}
 		});
+
+		var checkNetworks = function(){
+			var enabledFbSettings = $('#facebook_modal input:checked').length;
+			var enabledNetworks = $('#settings_form input:checked').length;
+			var totalEnabled = enabledFbSettings + enabledNetworks;
+
+			if(totalEnabled == 0){
+				noty_err.text = "You haven't selected a network to post your status update. Click on Settings and enable atleast one network";
+				return false;
+			}
+		};
 		
 		$('#settings_form input[type=checkbox]').click(function(){
 			
@@ -516,6 +529,7 @@ include('includes/footer.php');
 					FB.api('/me', function(user){
 						$('#facebook_login').hide();
 						$('#fb_user').text(user.name);
+						$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ user.id +'/picture?type=square');
 					});
 				}
 			});
@@ -538,6 +552,7 @@ include('includes/footer.php');
 			if(!!!fbLists[selectedFbList[fbListType + '_id']]){
 				//list doesn't exist yet
 				$('#' + inputId).val('');
+				$('#' + inputId).focus();
 
 				var current_fb_list = $('#' + listContainer);
 				var fb_list = $("<div>");
@@ -667,8 +682,8 @@ include('includes/footer.php');
 			var list_id = $(this).attr('id');
 			var list_status = Number(!!$(this).attr('checked'));
 			var list_type = $(this).data('listtype');
-			var prefix = list_type.substr(list_type.length - 1, -1);
-
+			var prefix = list_type.substring(list_type.length - 1, -1);
+			
 			updateFbListStatus(list_type, prefix, list_id, list_status);
 		});
 
@@ -676,7 +691,7 @@ include('includes/footer.php');
 
 			current_user['settings']['facebook'][listType][listId][prefix + '_status'] = listStatus; 
 			
-			current_users[current_user.uid]['settings']['facebook'][listType][listId]['group_status'] = listStatus;
+			current_users[current_user.uid]['settings']['facebook'][listType][listId][prefix + '_status'] = listStatus;
 			users.set('users', current_users);
 
 			$.post('actions.php', 

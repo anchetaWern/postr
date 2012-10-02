@@ -15,7 +15,7 @@ $action = $_POST['action'];
 
 switch($action){
 	case 'sign_up':
-
+		session_destroy();
 		$uid = 0;
 		$email 		= $_POST['email'];
 		$password	= $_POST['pword'];
@@ -170,12 +170,20 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 
 	if($fbloginstatus == 'connected'){
 		if($fbSetting == 1){
-			$networks->postToFbProfile($status, $link, $file);
+
+			$friendList = array();
+			foreach($fbLists as $row){
+				array_push($friendList, $row['fb_id']);
+			}
+
+			$listIDs = implode(",", $friendList);
+
+			$networks->postToFbProfile($status, $listIDs, $link, $file);
 		}
 
-		$networks->postToFbGroup($fbGroups, 'groups', $status, $link, $file);
+		$networks->postToFbGroup($fbGroups, $status, $link, $file);
 		$networks->postToFbPage($fbPages, $status, $link, $file);
-		$networks->postToFbGroup($fbLists, 'lists', $status, $link, $file); //list(same structure with groups)
+		$networks->postToFbGroup($fbLists, $status, $link, $file); //list(same structure with groups)
 	}
 
 }

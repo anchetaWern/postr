@@ -30,4 +30,16 @@
 		"closable":true,
 		"closeOnSelfClick":true
 	}
+
+	var ajaxLoad = function(){
+
+		$('body').addClass('blurout');
+		$('#ajaxloader').show();
+	};
+
+	var ajaxDone = function(){
+
+		$('body').removeClass('blurout');
+		$('#ajaxloader').hide();
+	};
 </script>

@@ -3,6 +3,7 @@ include('includes/header.php');
 ?>
 	<body>
 		<div class="container">
+			<img src="assets/ajax-loader.gif" id="ajaxloader" style="display:none;"/>
 			<div class="app_title">
 				<img src="img/postr.png"/>
 				<h2>Postr</h2>
@@ -36,7 +37,7 @@ include('includes/footer.php');
 	
 	if(!networks.get('networks')){
 		//set networks if it doesn't exists yet
-		networks.set('networks', ['facebook', 'gplus', 'linked_in', 'twitter']);
+		networks.set('networks', ['facebook', 'twitter']);
 	}
 	
 	if(!users.get('users')){
@@ -55,6 +56,8 @@ include('includes/footer.php');
 			email : $.trim($('#email').val()),
 			pword : $.trim($('#pword').val())
 		};
+
+		ajaxLoad();
 		
 		$.post(
 			'actions.php', 
@@ -74,9 +77,12 @@ include('includes/footer.php');
 					
 					current_users[uid] = current_user;
 					users.set('users', current_users);
+
+					ajaxDone();
 				}else{
 					noty_err.text = 'An Error Occured While Creating Your Account, Please Try Again.';
 					noty(noty_err);
+					ajaxDone();
 				}
 				
 				$('#email, #pword').val('');

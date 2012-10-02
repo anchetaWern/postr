@@ -103,9 +103,15 @@ class networks{
 		return $this->facebook->getLogoutUrl();
 	}
 
-	public function postToFbProfile($status, $link = '', $file = ''){
+	public function postToFbProfile($status, $lists, $link = '', $file = ''){
 		$this->facebook->setFileUploadSupport(true);
 		$postContents = $this->getFbStatus($status, $link, $file);
+
+		if($lists != ''){
+			$postContents["privacy"] = array("value" => "CUSTOM", "friends" => "SOME_FRIENDS", "allow" => $lists);
+			
+		}
+
 
 		if($file != ''){
 			$this->facebook->api('/me/photos', 'post', $postContents);
@@ -115,23 +121,16 @@ class networks{
 		
 	}
 
-	public function postToFbGroup($groups, $groupType, $status, $link = '', $file = ''){
+	public function postToFbGroup($groups, $status, $link = '', $file = ''){
 		$this->facebook->setFileUploadSupport(true);
 		$postContents = $this->getFbStatus($status, $link, $file);
 
 		foreach($groups as $group){
 			$group_id = $group['fb_id'];
-			$group_status = $group['status'];
+			$isAGroupMember = $this->FBGroupMemberCount($group_id);
+	
 
-			if($groupType == 'groups'){
-
-				$isAGroupMember = $this->FBGroupMemberCount($group_id);
-			}else{
-
-				$isAGroupMember = $this->FBFriendListCount($group_id);
-			}
-
-			if($group_status == 1 && $isAGroupMember){
+			if($isAGroupMember){
 				if($file != ''){
 					$response = $this->facebook->api("/$group_id/photos", "post", $postContents);
 				}else{
@@ -143,6 +142,8 @@ class networks{
 		}
 	}
 
+
+
 	public function postToFbPage($pages, $status, $link = '', $file = ''){
 		$this->facebook->setFileUploadSupport(true);
 		$postContents = $this->getFbStatus($status, $link, $file);
@@ -150,11 +151,10 @@ class networks{
 		foreach($pages as $page){
 
 			$page_id = $page['fb_id'];
-			$page_status = $page['status'];
 			$isAPageFan = $this->FBPageFanCount($page_id);
 			$isAPageAdmin = $this->FBPageAdminCount($page_id);
 
-			if($page_status == 1 && ($isAPageAdmin || $isAPageFan)){
+			if($isAPageAdmin || $isAPageFan){
 				$page_data = $this->facebook->api("/$page_id", array("fields" => "access_token"));
 				$page_access_token = $page_data['access_token'];
 				
@@ -209,13 +209,13 @@ class networks{
 	public function getFbStatus($status, $link = '', $file = ''){
 		
 		$statusContents = array();
-		if($link != ''){
+		if($link != '' && $file != ''){
+			
+			$statusContents = array('message' => $status, 'link' => $link, 'source' => '@'.realpath($file));
+		}else if($link != '' && $file == ''){
 			
 			$statusContents = array('message' => $status, 'link' => $link);
 		}else if($link == '' && $file != ''){
-			
-			$statusContents = array('message' => $status, 'source' => '@'.realpath($file));
-		}else if($file != ''){
 
 			$statusContents = array('message' => $status, 'source' => '@'.realpath($file));
 		}else{

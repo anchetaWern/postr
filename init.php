@@ -7,20 +7,28 @@ $db = new db();
 
 $user_id = $_SESSION['uid'];
 
+$networks->setTwitterRequestToken();
+$twitterUrl =  $networks->getTwitterLogin();
+$twitterUrlText = ' Login';
+$twitterUserImg = 'img/default.png';
+$twitterUserName = '';
+
 if($db->hasTwitter($user_id) == 0){ //new user
 	if(!isset($_SESSION['twitteruser_token'], $_SESSION['twitteruser_secret'])){
 	  
-		if(!isset($_SESSION['request_secret'])){
-
-		  $networks->setTwitterRequestToken();
-			$twitterUrl =  $networks->getTwitterLogin();
-			$twitterUrlText = ' Login';
-			$twitterUserImg = 'img/default.png';
-		}
-	   
+	
 		if(isset($_GET['oauth_token'], $_GET['oauth_verifier'])){
 			
 			$networks->setTwitterUserAccessToken($_GET['oauth_token'], $_GET['oauth_verifier']);
+			$oauthUser = $networks->getTwitterUserInfo();
+
+			$oauthID = $oauthUser['oauth_id'];
+			$oauthUsername = $oauthUser['username'];
+			$oauth_token = $_SESSION['twitteruser_token'];
+			$oauth_secret = $_SESSION['twitteruser_secret'];
+
+			$db->createOauth($user_id, $oauthID, 'twitter', $oauth_token, $oauth_secret, $oauthUsername);
+
 			unset($_SESSION['request_secret']);
 
 			header('Location: '.$_SERVER['PHP_SELF']);	
