@@ -212,7 +212,7 @@ include('includes/footer.php');
 				
 				var network = x;
 				var network_status = Number(current_user.settings[x]['status']);
-				console.log(network + " " +network_status + " " + index);
+				
 				if(network_status > 0){
 					$($('#settings_form input[type=checkbox]')[index]).attr('checked', true);
 					
