@@ -5,13 +5,24 @@ require_once('class.db.php');
 $networks = new networks();
 $db = new db();
 
+if(!empty($_COOKIE['user'])){
+	$_SESSION['uid'] = $_COOKIE['user'];
+}
+
 $user_id = $_SESSION['uid'];
+
+$userInfo = $db->getUserInfo($user_id);
+
+if(empty($_SESSION['uid'])){
+	header('Location: index.php');
+}
 
 $networks->setTwitterRequestToken();
 $twitterUrl =  $networks->getTwitterLogin();
 $twitterUrlText = ' Login';
 $twitterUserImg = 'img/default.png';
 $twitterUserName = '';
+
 
 if($db->hasTwitter($user_id) == 0){ //new user
 	if(!isset($_SESSION['twitteruser_token'], $_SESSION['twitteruser_secret'])){

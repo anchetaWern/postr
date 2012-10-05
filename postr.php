@@ -3,17 +3,10 @@ session_start();
 header('Content-type: text/html; charset=utf-8');
 require_once('includes/header.php');
 require_once('init.php');
-
-
-if(empty($_SESSION['uid'])){
-	header('Location: index.php');
-}
-
-$user_id = $_SESSION['uid'];
 ?>
 	<body>
 		<div class="container">
-			<span class="logout"><a id="logout" href="#"><?php echo $_SESSION['email']; ?> [Logout]</a></span>
+			<span class="logout"><a id="logout" href="#"><?php echo $userInfo['email']; ?> [Logout]</a></span>
 			<img src="assets/ajax-loader.gif" id="ajaxloader" style="display:none;"/>
 			<div class="app_title">
 				<img src="img/postr.png"/>

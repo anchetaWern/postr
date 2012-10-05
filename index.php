@@ -19,6 +19,10 @@ include('includes/header.php');
 				 
 				  <a href="#" id="login" class="success button">Login</a>
 				  <a href="signup.php">Signup</a>
+
+				  <label for="remember">Remember Me
+				  <input type="checkbox" name="remember" id="remember"/>
+				  </label>
 				</form> 
 			</div><!--/.form_container-->
 		</div><!--/.container-->
@@ -33,14 +37,19 @@ include('includes/footer.php');
 		
 		var user_info = {
 			email : $.trim($('#email').val()),
-			pword : $.trim($('#pword').val())
+			pword : $.trim($('#pword').val()),
+			remember : $('#remember').attr('checked') || 'off'
 		};
 		
 		ajaxLoad();
 
 		$.post(
 			'actions.php', 
-			{'action' : 'login', 'email' : user_info.email, 'pword' : user_info.pword},
+			{
+				'action' : 'login', 'email' : user_info.email, 
+				'pword' : user_info.pword, 
+				'remember' : user_info.remember
+			},
 			function(data){
 				if(parseInt(data) > 0){
 					noty_success.text = 'Login Successfull!';

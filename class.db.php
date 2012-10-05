@@ -59,6 +59,17 @@ class db{
 		return $uid;
 	}
 
+	public function getUserInfo($uid){
+		$userInfo = array();
+		$user = $this->conn->query("SELECT email FROM tbl_users WHERE uid = '$uid'");
+		if($user->num_rows > 0){
+			$row = $user->fetch_object();
+			$email = $row->email;
+			$userInfo = array("uid" =>$uid, "email" => $email);
+		}
+		return $userInfo;
+	}
+
 	public function loadUserSettings(){
 		
 		$user_settings = array();

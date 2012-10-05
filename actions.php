@@ -32,14 +32,26 @@ switch($action){
 		$uid = 0;
 		$email 		= $_POST['email'];
 		$password	= $_POST['pword'];
-		
+		$remember = $_POST['remember'];
+
+		$expireTime = time() + 60 * 60 * 24 * 15; //15 days
+		$deleteTime = time () - 1;
+
 		$salt = $db->getUserSalt($email);
 		$hash = $bcrypt->hash($password, $salt);
 		
 		$uid = $db->loginUser($email, $hash);
+
+		if($uid != 0){
+			$_SESSION['uid'] = $uid; 
+			$_SESSION['email'] = $email;
+
+			if($remember != 'off'){
+				setcookie("user", "", $deleteTime, '/'); //delete previous user
+				setcookie("user", $uid, $expireTime, '/'); //set new user
+			}
+		}
 		
-		$_SESSION['uid'] = $uid; 
-		$_SESSION['email'] = $email;
 
 		//twitter user tokens
 		$twitterUserTokens = $db->getTwitterUserTokens($uid);
@@ -145,6 +157,9 @@ switch($action){
 	case 'logout':
 
 		session_destroy();
+		$deleteTime = time () - 1;
+		setcookie("user", "", $deleteTime, '/');
+		
 	break;
 }
 
