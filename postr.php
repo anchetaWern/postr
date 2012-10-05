@@ -166,7 +166,7 @@ $user_id = $_SESSION['uid'];
 include('includes/footer.php');
 ?>	
 	<script src="libs/foundation/javascripts/jquery.foundation.reveal.js"></script>
-	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
+	<script src="libs/jqueryui/js/jquery-ui-1.8.24.custom.min.js"></script>
 	<script src="libs/foundation/javascripts/jquery.foundation.tabs.js"></script>
 	
 	<script>

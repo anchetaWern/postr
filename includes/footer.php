@@ -1,4 +1,4 @@
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+<script src="libs/jqueryui/js/jquery-1.8.2.min.js"></script>
 <script src="libs/noty/js/jquery.noty.js"></script>
 <script src="libs/storejs/source/store.js"></script>
 
