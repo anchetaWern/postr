@@ -3,6 +3,10 @@ session_start();
 header('Content-type: text/html; charset=utf-8');
 require_once('includes/header.php');
 require_once('init.php');
+
+if(empty($_SESSION['uid'])){
+	header('Location: index.php');
+}
 ?>
 	<body>
 		<div class="container">
