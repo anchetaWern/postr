@@ -149,6 +149,20 @@ switch($action){
 
 	break;
 
+	case 'update_oauth':
+		$provider = $_POST['provider'];
+		$username = $_POST['username'];
+		$oauthID = $_POST['oauth_id'];
+		$oauthToken = $_POST['oauth_token'];
+
+		if($db->hasOauth($_SESSION['uid'], "facebook") == 0){
+			$db->createOauth($_SESSION['uid'], $oauthID, $provider, $oauthToken, "", $username);
+		}else{
+			$db->updateOauth($_SESSION['uid'], $provider, $oauthToken, "");
+		}
+
+	break;
+
 	case 'get_uid':
 
 		echo $_SESSION['uid'];
@@ -174,7 +188,7 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 
 	$twitterSetting = $db->getNetworkSetting($user_id, 'twitter');
 
-	if($db->hasTwitter($user_id) > 0 && $twitterSetting == 1){
+	if($db->hasOauth($user_id, "twitter") > 0 && $twitterSetting == 1){
 		$res = $networks->tweet(
 			$_SESSION['twitteruser_token'], 
 			$_SESSION['twitteruser_secret'], 
@@ -183,7 +197,7 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 		);
 	}
 
-	if($fbloginstatus == 'connected'){
+	if($fbloginstatus == 'connected' || $_SESSION['fbAccessToken']){
 		if($fbSetting == 1){
 
 			$friendList = array();

@@ -1363,7 +1363,7 @@ abstract class BaseFacebook
     }
 
     return $response_params['access_token'];
-	}
+  }
 
   /**
    * Parses the metadata cookie that our Javascript API set

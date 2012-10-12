@@ -57,11 +57,11 @@ if(empty($_SESSION['uid'])){
 				<form id="settings_form">
 					<p>
 						<label data-for="facebook">
-							<img id="fb_pic" src="img/default.png" width="48px" height="48px"/>
+							<img id="fb_pic" src="<?php echo $fbUserImg ?>" width="48px" height="48px"/>
 							<input type="checkbox" id="facebook">
 							<a href="#" class="facebook_settings">Facebook</a>
 							<a href="#" id="facebook_login" class="login_links"><?php echo $fbUrlText; ?></a>
-							<span id="fb_user"></span>
+							<span id="fb_user"><?php echo $fbUser; ?></span>
 						
 					</p>
 					
@@ -527,6 +527,18 @@ include('includes/footer.php');
 						$('#facebook_login').hide();
 						$('#fb_user').text(user.name);
 						$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ user.id +'/picture?type=square');
+
+						var fbAccessToken = FB.getAccessToken();
+
+						$.post(
+							"actions.php", 
+							{
+							"action" : "update_oauth",	
+							"provider" : "facebook", "oauth_id" : user.id, 
+							"oauth_token" : fbAccessToken,
+							"username" : user.name
+							}
+						);
 					});
 				}
 			});

@@ -24,6 +24,13 @@ class networks{
 		  'secret' => $this->config['FB_SECRET'],
 		));
 
+		$this->facebook->setAccessToken($_SESSION['fbAccessToken']);
+		$this->facebook->setFileUploadSupport(true);
+
+	}
+
+	public function fba($postContents){
+		return $this->facebook->api('/me/feed', 'post', $postContents);
 	}
 
 	public function setTwitterRequestToken(){
@@ -98,20 +105,32 @@ class networks{
 		return $this->facebook->getLoginUrl($options);
 	}
 
+	public function getFbUser($access_token){
+
+		$this->facebook->setAccessToken($access_token);
+		$fbUser = $this->facebook->api(
+			array(
+				"method" => "fql.query", 
+				"query" => "SELECT name, pic_small FROM user WHERE uid=me()"
+			)
+		);
+
+		return $fbUser;
+	}
+
 	public function getFbLogoutUrl(){
 
 		return $this->facebook->getLogoutUrl();
 	}
 
 	public function postToFbProfile($status, $lists, $link = '', $file = ''){
-		$this->facebook->setFileUploadSupport(true);
+		
 		$postContents = $this->getFbStatus($status, $link, $file);
 
 		if($lists != ''){
 			$postContents["privacy"] = array("value" => "CUSTOM", "friends" => "SOME_FRIENDS", "allow" => $lists);
 			
 		}
-
 
 		if($file != ''){
 			$this->facebook->api('/me/photos', 'post', $postContents);
@@ -122,7 +141,7 @@ class networks{
 	}
 
 	public function postToFbGroup($groups, $status, $link = '', $file = ''){
-		$this->facebook->setFileUploadSupport(true);
+		
 		$postContents = $this->getFbStatus($status, $link, $file);
 
 		foreach($groups as $group){
@@ -145,7 +164,9 @@ class networks{
 
 
 	public function postToFbPage($pages, $status, $link = '', $file = ''){
-		$this->facebook->setFileUploadSupport(true);
+
+		$this->facebook->setAccessToken($access_token);
+		
 		$postContents = $this->getFbStatus($status, $link, $file);
 
 		foreach($pages as $page){
@@ -224,5 +245,37 @@ class networks{
 
 		return $statusContents;
 	}
+
+	public function getFBAcessToken($access_token){
+		$graph_url = "https://graph.facebook.com/me?access_token=" . $access_token;
+		$response = $this->curl_get_file_contents($graph_url);
+		$decoded_response = json_decode($response);
+		
+		if($decoded_response->error){
+			//access token has expired
+			$access_token = $this->facebook->getExtendedAccessToken();
+
+		}
+		return $access_token;
+	}
+
+	public function getExtendedAccessToken(){
+		return $this->facebook->getExtendedAccessToken();
+	}
+
+	private  function curl_get_file_contents($url){
+    $c = curl_init();
+    curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($c, CURLOPT_URL, $url);
+    $contents = curl_exec($c);
+
+    $err  = curl_getinfo($c,CURLINFO_HTTP_CODE);
+    curl_close($c);
+    if ($contents){
+    	return $contents;
+    }else{
+    	return false;
+    } 
+  }
 }
 ?>

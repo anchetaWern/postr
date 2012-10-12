@@ -132,6 +132,8 @@ class db{
 		return $user_settings;
 	}
 
+
+
 	public function createFbSetting($user_id, $fb_type, $fb_id, $fb_name, $img_url = ''){
 
 		$this->conn->query("
@@ -169,13 +171,34 @@ class db{
 
 	}
 
-	public function hasTwitter($user_id){
+	public function hasOauth($user_id, $provider){
 
-		$has_twitter = $this->conn->query("
-			SELECT user_id FROM tbl_oauth WHERE user_id = '$user_id' AND provider = 'twitter'
+		$has_oauth = $this->conn->query("
+			SELECT user_id FROM tbl_oauth WHERE user_id = '$user_id' AND provider = '$provider'
 		");
-		return $has_twitter->num_rows;
+		return $has_oauth->num_rows;
 	
+	}
+
+	public function getOauth($user_id, $provider){
+
+		$oauthData = array();
+		$oauth = $this->conn->query("
+			SELECT oauth_id, oauth_token, oauth_secret, username FROM tbl_oauth 
+			WHERE user_id = '$user_id' AND provider = '$provider' 	
+		");
+
+		if($oauth->num_rows > 0){
+			$oauthRow = $oauth->fetch_object();
+			$oauthData = array(
+				"oauth_id" => $oauthRow->oauth_id,
+				"oauth_token" => $oauthRow->oauth_token,
+				"oauth_secret" => $oauthRow->oauth_secret,
+				"username" => $oauthRow->username
+			);
+		}
+
+		return $oauthData;
 	}
 
 	public function createOauth($user_id, $oauth_id, $provider, $oauth_token = '', $oauth_secret = '', $username = ''){
@@ -188,6 +211,15 @@ class db{
 		");	
 
 		return $this->conn->affected_rows;
+	}
+
+	public function updateOauth($user_id, $provider, $oauth_token, $oauth_secret){
+
+		$this->conn->query("
+			UPDATE tbl_oauth SET oauth_token = '$oauth_token', 
+			oauth_secret = '$oauth_secret'
+			WHERE user_id = '$user_id' AND provider = '$provider'
+		");
 	}
 
 	public function getTwitterUserTokens($user_id){

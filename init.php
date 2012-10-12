@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL ^ E_NOTICE);
 require_once('class.networks.php');
 require_once('class.db.php');
 require_once('class.user.php');
@@ -17,15 +18,22 @@ if($userCookie){
 $user_id = $_SESSION['uid'];
 $userInfo = $db->getUserInfo($user_id);
 
-
+//twitter defaults
 $networks->setTwitterRequestToken();
 $twitterUrl =  $networks->getTwitterLogin();
 $twitterUrlText = ' Login';
 $twitterUserImg = 'img/default.png';
 $twitterUserName = '';
 
+//facebook defaults
+$fbOauthdata = $db->getOauth($user_id, "facebook");
+$fbAccessToken = $networks->getFBAcessToken($fbOauthdata['oauth_token']);
+if($fbAccessToken){
+	$fbUserData = $networks->getFbUser($fbAccessToken);
+	$_SESSION['fbAccessToken'] = $fbAccessToken;
+}
 
-if($db->hasTwitter($user_id) == 0){ //new user
+if($db->hasOauth($user_id, "twitter") == 0){ //new user
 	if(!isset($_SESSION['twitteruser_token'], $_SESSION['twitteruser_secret'])){
 	  
 	
@@ -59,9 +67,13 @@ if($db->hasTwitter($user_id) == 0){ //new user
 	$twitterUrlText = '';
 }	
 
-
+$fbUser = "";
 $fbUrlText = "";
-if($networks->hasFbUser() == 0){ //has a current fb user
+$fbUserImg = "img/default.png";
+if($networks->hasFbUser() == 0 && $fbAccessToken == ""){ //has no current fb user
 	$fbUrlText = " Login";
+}else{
+	$fbUser = $fbOauthdata['username'];
+	$fbUserImg = $fbUserData[0]['pic_small'];
 }
 ?>
