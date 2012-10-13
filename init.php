@@ -26,12 +26,16 @@ $twitterUserImg = 'img/default.png';
 $twitterUserName = '';
 
 //facebook defaults
-$fbOauthdata = $db->getOauth($user_id, "facebook");
-$fbAccessToken = $networks->getFBAcessToken($fbOauthdata['oauth_token']);
-if($fbAccessToken){
-	$fbUserData = $networks->getFbUser($fbAccessToken);
-	$_SESSION['fbAccessToken'] = $fbAccessToken;
+$oAuthData = $db->getOauth($user_id, "facebook");
+if(!empty($oAuthData) && $networks->hasFbUser()){
+
+	$fbUserID = $oAuthData['oauth_id'];
+	$fbOauthdata = $networks->getFbUser($fbUserID);
+	$_SESSION['fbuser_id'] = $fbUserID;
+	$_SESSION['fbuser_name'] = $fbOauthdata[0]['name'];
 }
+
+
 
 if($db->hasOauth($user_id, "twitter") == 0){ //new user
 	if(!isset($_SESSION['twitteruser_token'], $_SESSION['twitteruser_secret'])){
@@ -70,10 +74,10 @@ if($db->hasOauth($user_id, "twitter") == 0){ //new user
 $fbUser = "";
 $fbUrlText = "";
 $fbUserImg = "img/default.png";
-if($networks->hasFbUser() == 0 && $fbAccessToken == ""){ //has no current fb user
+if(empty($fbUserID)){ //has no current fb user
 	$fbUrlText = " Login";
 }else{
-	$fbUser = $fbOauthdata['username'];
-	$fbUserImg = $fbUserData[0]['pic_small'];
+	$fbUser = $fbOauthdata[0]['name'];
+	$fbUserImg = $fbOauthdata[0]['pic_small'];
 }
 ?>

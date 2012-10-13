@@ -220,6 +220,11 @@ class db{
 			oauth_secret = '$oauth_secret'
 			WHERE user_id = '$user_id' AND provider = '$provider'
 		");
+
+		if($provider == "facebook"){
+			$_SESSION['fb_access_token'] = $oauth_token;
+		}
+		
 	}
 
 	public function getTwitterUserTokens($user_id){

@@ -5,6 +5,7 @@ class networks{
 	private $twitter_token = array();
 	private $twitter_usertoken;
 	private $twitter_usersecret;
+	private $facebook_ID;
 
 	private $facebook;
 
@@ -24,13 +25,21 @@ class networks{
 		  'secret' => $this->config['FB_SECRET'],
 		));
 
-		$this->facebook->setAccessToken($_SESSION['fbAccessToken']);
+		
+		if(!empty($_SESSION['fb_access_token'])){
+			$this->facebook->setAccessToken($_SESSION['fb_access_token']);
+			
+		}
+
 		$this->facebook->setFileUploadSupport(true);
+		if(!empty($_SESSION['fbuser_id'])){
+			$this->facebook_ID = $_SESSION['fbuser_id'];
+		}
 
 	}
 
-	public function fba($postContents){
-		return $this->facebook->api('/me/feed', 'post', $postContents);
+	public function getAccess(){
+		return $this->config['FB_TOKEN'];
 	}
 
 	public function setTwitterRequestToken(){
@@ -105,13 +114,12 @@ class networks{
 		return $this->facebook->getLoginUrl($options);
 	}
 
-	public function getFbUser($access_token){
+	public function getFbUser($fbUserID){
 
-		$this->facebook->setAccessToken($access_token);
 		$fbUser = $this->facebook->api(
 			array(
 				"method" => "fql.query", 
-				"query" => "SELECT name, pic_small FROM user WHERE uid=me()"
+				"query" => "SELECT name, pic_small FROM user WHERE uid=" . $fbUserID
 			)
 		);
 
@@ -133,9 +141,9 @@ class networks{
 		}
 
 		if($file != ''){
-			$this->facebook->api('/me/photos', 'post', $postContents);
+			$this->facebook->api('/'. $this->facebook_ID .'/photos', 'post', $postContents);
 		}else{
-			$this->facebook->api('/me/feed', 'post', $postContents);
+			$this->facebook->api('/'. $this->facebook_ID .'/feed', 'post', $postContents);
 		}
 		
 	}
@@ -165,7 +173,7 @@ class networks{
 
 	public function postToFbPage($pages, $status, $link = '', $file = ''){
 
-		$this->facebook->setAccessToken($access_token);
+		
 		
 		$postContents = $this->getFbStatus($status, $link, $file);
 
@@ -195,7 +203,7 @@ class networks{
 		
 		$groupMember = $this->facebook->api(array(
 			"method" => "fql.query",
-			"query" => "SELECT gid, uid FROM group_member WHERE gid = '$fbGroupID' AND uid = me()"
+			"query" => "SELECT gid, uid FROM group_member WHERE gid = '$fbGroupID' AND uid = '$this->facebook_ID'"
 		));
 		return count($groupMember);
 	}
@@ -204,7 +212,7 @@ class networks{
 
 		$pageLiked = $this->facebook->api(array(
 			"method" => "fql.query",
-			"query" => "SELECT page_id FROM page_fan WHERE uid = me() AND page_id = '$fbPageID'"
+			"query" => "SELECT page_id FROM page_fan WHERE uid = '$this->facebook_ID'  AND page_id = '$fbPageID'"
 		));
 		return count($pageLiked);
 	}
@@ -213,7 +221,7 @@ class networks{
 
 		$pageAdmin = $this->facebook->api(array(
 			"method" => "fql.query",
-			"query" => "SELECT page_id FROM page_admin WHERE uid = me() AND page_id = '$fbPageID'"
+			"query" => "SELECT page_id FROM page_admin WHERE uid = '$this->facebook_ID'  AND page_id = '$fbPageID'"
 		));
 		return count($pageAdmin);
 	}
@@ -222,7 +230,7 @@ class networks{
 
 		$friendlist = $this->facebook->api(array(
 			"method" => "fql.query",
-			"query" => "SELECT flid FROM friendlist WHERE owner = me() AND flid = '$fbListID'"
+			"query" => "SELECT flid FROM friendlist WHERE owner = '$this->facebook_ID'  AND flid = '$fbListID'"
 		));
 		return count($friendlist);
 	}
@@ -246,36 +254,5 @@ class networks{
 		return $statusContents;
 	}
 
-	public function getFBAcessToken($access_token){
-		$graph_url = "https://graph.facebook.com/me?access_token=" . $access_token;
-		$response = $this->curl_get_file_contents($graph_url);
-		$decoded_response = json_decode($response);
-		
-		if($decoded_response->error){
-			//access token has expired
-			$access_token = $this->facebook->getExtendedAccessToken();
-
-		}
-		return $access_token;
-	}
-
-	public function getExtendedAccessToken(){
-		return $this->facebook->getExtendedAccessToken();
-	}
-
-	private  function curl_get_file_contents($url){
-    $c = curl_init();
-    curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($c, CURLOPT_URL, $url);
-    $contents = curl_exec($c);
-
-    $err  = curl_getinfo($c,CURLINFO_HTTP_CODE);
-    curl_close($c);
-    if ($contents){
-    	return $contents;
-    }else{
-    	return false;
-    } 
-  }
 }
 ?>

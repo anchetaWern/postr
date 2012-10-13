@@ -180,6 +180,22 @@ include('includes/footer.php');
 	
 		$(document).foundationTabs();
 		
+		var getCurrentFbUser = function(){
+			$.post(
+				'actions.php',
+				{'action' : 'get_fbuser'},
+				function(fbuser){
+					if(fbuser){
+						fbuser = JSON.parse(fbuser);
+						current_user.fb_id = fbuser['fbuser_id'];
+						current_user.fb_name = fbuser['fbuser_name'];
+					}
+				}
+			);
+		};
+
+		getCurrentFbUser();
+
 		$.post(
 			'actions.php',
 			{'action' : 'get_uid'},
@@ -249,6 +265,104 @@ include('includes/footer.php');
 				
 				listContainer.append(fb_list);
 			}
+		};
+
+		var loadFbData = function(){
+
+			FB.api('/' + current_user.fb_id, function(user){
+				$('#fb_user').text(user.name);
+				$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ current_user.fb_id +'/picture?type=square');
+			});
+
+
+			FB.api('/'+ current_user.fb_id +'/groups', function(groups){
+					var user_groups = groups.data;
+					var data_source = [];
+					
+					for(var index in user_groups){
+						var group_id = user_groups[index]['id'];
+						var group_name = user_groups[index]['name'];
+						data_source.push(
+							{
+							'value' : group_name,
+							'group_id' : group_id,
+							'group_name' : group_name
+							}
+						);
+					}
+					
+					loadFbAutocomplete('fb_groups', 'group', JSON.stringify(data_source), current_fb_group);
+			});
+
+
+					
+			FB.api({
+				  method : 'fql.multiquery',
+				  queries: {
+					'q1' : 'SELECT page_id FROM page_admin WHERE uid = ' + current_user.fb_id,
+					'q2' : 'SELECT page_id, name, pic_small, description FROM page WHERE page_id IN (SELECT page_id FROM #q1)'
+				  }
+				}, 
+					function(data){
+					
+						var user_pages = data[1]['fql_result_set'];
+						var data_source = [];
+						for(var x in user_pages){
+							var page_obj = user_pages[x];
+							
+							var page_id = page_obj['page_id'];
+							var page_name = page_obj['name'];
+							var page_description = page_obj['description'];
+							var page_pic = page_obj['pic_small']
+							
+							data_source.push(
+								{
+								'value' : page_name, 'page_name' : page_name, 
+								'page_id' : page_id, 'page_pic' : page_pic,
+								'page_description' : page_description
+								} 
+							);
+							
+						}
+						
+						$('#fb_pages').autocomplete({
+							source: data_source,
+							select: function(event, ui){
+								current_fb_page['page_id'] = ui['item']['page_id'];
+								current_fb_page['page_description'] = ui['item']['page_description'];
+								current_fb_page['page_name'] = ui['item']['page_name'];
+								current_fb_page['page_pic'] = ui['item']['page_pic'];
+							}
+						}).data("autocomplete")._renderItem = function(ul, item){
+							return $("<li></li>")
+							.data("item.autocomplete", item)
+							.append("<a id='"+  item.page_id +"'>" + "<img src='" + item.page_pic + "' />" + item.page_name+ "</a>" )
+							.appendTo( ul );
+						};
+						
+						
+					}
+			);
+
+			FB.api('/' + current_user.fb_id +'/friendlists', function(friendlists){
+				var user_friendlist = friendlists.data;
+				var data_source = [];
+
+				for(var index in user_friendlist){
+					var list_id = user_friendlist[index]['id'];
+					var list_name = user_friendlist[index]['name'];
+
+					data_source.push({
+						'value' : list_name,
+						'list_id' : list_id,
+						'list_name' : list_name	
+					});
+				}
+
+				
+				loadFbAutocomplete('fb_lists', 'list', JSON.stringify(data_source), current_fb_list);
+
+			});
 		};
 
 		
@@ -396,103 +510,16 @@ include('includes/footer.php');
 	      cookie     : true // enable cookies to allow the server to access the session
 	    });
 
-	
+
 
 		(function(){
 			FB.getLoginStatus(function(response){
 			  if (response.status === 'connected'){
-			  	var fb_id = FB.getUserID();
-			  	FB.api('/me', function(user){
-  					$('#fb_user').text(user.name);
-  					$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ fb_id +'/picture?type=square');
-					});
+			  	
+			  	var fbAccessToken = FB.getAccessToken();
+					updateFbAccessToken(fbAccessToken);
 
-					FB.api({
-					  method : 'fql.multiquery',
-					  queries: {
-						'q1' : 'SELECT page_id FROM page_admin WHERE uid = me()',
-						'q2' : 'SELECT page_id, name, pic_small, description FROM page WHERE page_id IN (SELECT page_id FROM #q1)'
-					  }
-					}, 
-						function(data){
-						
-							var user_pages = data[1]['fql_result_set'];
-							var data_source = [];
-							for(var x in user_pages){
-								var page_obj = user_pages[x];
-								
-								var page_id = page_obj['page_id'];
-								var page_name = page_obj['name'];
-								var page_description = page_obj['description'];
-								var page_pic = page_obj['pic_small']
-								
-								data_source.push(
-									{
-									'value' : page_name, 'page_name' : page_name, 
-									'page_id' : page_id, 'page_pic' : page_pic,
-									'page_description' : page_description
-									} 
-								);
-								
-							}
-							
-							$('#fb_pages').autocomplete({
-								source: data_source,
-								select: function(event, ui){
-									current_fb_page['page_id'] = ui['item']['page_id'];
-									current_fb_page['page_description'] = ui['item']['page_description'];
-									current_fb_page['page_name'] = ui['item']['page_name'];
-									current_fb_page['page_pic'] = ui['item']['page_pic'];
-								}
-							}).data("autocomplete")._renderItem = function(ul, item){
-								return $("<li></li>")
-								.data("item.autocomplete", item)
-								.append("<a id='"+  item.page_id +"'>" + "<img src='" + item.page_pic + "' />" + item.page_name+ "</a>" )
-								.appendTo( ul );
-							};
-							
-							
-						}
-					);
-					
-					FB.api('/me/groups', function(groups){
-						var user_groups = groups.data;
-						var data_source = [];
-						
-						for(var index in user_groups){
-							var group_id = user_groups[index]['id'];
-							var group_name = user_groups[index]['name'];
-							data_source.push(
-								{
-								'value' : group_name,
-								'group_id' : group_id,
-								'group_name' : group_name
-								}
-							);
-						}
-						
-						loadFbAutocomplete('fb_groups', 'group', JSON.stringify(data_source), current_fb_group);
-					});
-
-					FB.api('/me/friendlists', function(friendlists){
-  					var user_friendlist = friendlists.data;
-  					var data_source = [];
-
-  					for(var index in user_friendlist){
-  						var list_id = user_friendlist[index]['id'];
-  						var list_name = user_friendlist[index]['name'];
-
-  						data_source.push({
-  							'value' : list_name,
-  							'list_id' : list_id,
-  							'list_name' : list_name	
-  						});
-  					}
-
-  					
-  					loadFbAutocomplete('fb_lists', 'list', JSON.stringify(data_source), current_fb_list);
-
-					});
+			  	loadFbData();
 
 			  } 
 		 	});
@@ -524,25 +551,35 @@ include('includes/footer.php');
 			FB.login(function(response){
 				if(response.authResponse){
 					FB.api('/me', function(user){
+			
+						current_user.fb_id = user.id;
+						current_user.fb_name = user.name;
+
 						$('#facebook_login').hide();
 						$('#fb_user').text(user.name);
 						$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ user.id +'/picture?type=square');
 
 						var fbAccessToken = FB.getAccessToken();
+						updateFbAccessToken(fbAccessToken);
+						loadFbData();
 
-						$.post(
-							"actions.php", 
-							{
-							"action" : "update_oauth",	
-							"provider" : "facebook", "oauth_id" : user.id, 
-							"oauth_token" : fbAccessToken,
-							"username" : user.name
-							}
-						);
+						
 					});
 				}
 			});
 		});
+
+		var updateFbAccessToken = function(fbAccessToken){
+			$.post(
+				"actions.php", 
+				{
+				"action" : "update_oauth",	
+				"provider" : "facebook", "oauth_id" : current_user.fb_id, 
+				"oauth_token" : fbAccessToken,
+				"username" : current_user.fb_name
+				}
+			);
+		};
 
 		var getFbLoginStatus = function(){
 			var fbLoginStatus = 'not_connected';

@@ -161,11 +161,22 @@ switch($action){
 			$db->updateOauth($_SESSION['uid'], $provider, $oauthToken, "");
 		}
 
+		$_SESSION['fbuser_id'] = $oauthID;
+		$_SESSION['fbuser_name'] = $username;
+		
 	break;
 
 	case 'get_uid':
 
 		echo $_SESSION['uid'];
+	break;
+
+	case 'get_fbuser':
+		if(!empty($_SESSION['fbuser_id']) && !empty($_SESSION['fbuser_name'])){
+			$fbuser = array("fbuser_id" => $_SESSION['fbuser_id'], "fbuser_name" => $_SESSION['fbuser_name']);
+			echo json_encode($fbuser);
+		}
+		
 	break;
 	
 	case 'logout':
@@ -197,7 +208,7 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 		);
 	}
 
-	if($fbloginstatus == 'connected' || $_SESSION['fbAccessToken']){
+	if($fbloginstatus == 'connected' || !empty($_SESSION['fbuser_id'])){
 		if($fbSetting == 1){
 
 			$friendList = array();
@@ -207,7 +218,7 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 
 			$listIDs = implode(",", $friendList);
 
-			$networks->postToFbProfile($status, $listIDs, $link, $file);
+			$networks->postToFbProfile($status, "", $link, $file);
 		}
 
 		$networks->postToFbGroup($fbGroups, $status, $link, $file);
