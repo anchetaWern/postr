@@ -1,5 +1,6 @@
 <?php
 error_reporting(E_ALL ^ E_NOTICE);
+session_start();
 require_once('class.networks.php');
 require_once('class.db.php');
 require_once('class.user.php');
@@ -26,13 +27,32 @@ $twitterUserImg = 'img/default.png';
 $twitterUserName = '';
 
 //facebook defaults
+$fbUser = "";
+$fbUrlText = "";
+$fbUserImg = "img/default.png";
+
 $oAuthData = $db->getOauth($user_id, "facebook");
-if(!empty($oAuthData) && $networks->hasFbUser()){
+if(!empty($oAuthData) && $networks->hasFbUser() == $oAuthData['oauth_id']){
 
 	$fbUserID = $oAuthData['oauth_id'];
 	$fbOauthdata = $networks->getFbUser($fbUserID);
 	$_SESSION['fbuser_id'] = $fbUserID;
 	$_SESSION['fbuser_name'] = $fbOauthdata[0]['name'];
+
+	$fbUser = $fbOauthdata[0]['name'];
+	$fbUserImg = $fbOauthdata[0]['pic_small'];
+
+	$_SESSION['fblogin_status'] = "verified_user";
+
+}else if($networks->hasFbUser()){
+
+	$fbUserID = $oAuthData['oauth_id'];
+	$fbUser = "Unknown user <a href='#' id='facebook_logout'>Logout</a>";
+
+	$_SESSION['fblogin_status'] = "unknown_user";
+}else{
+	$fbUrlText = " Login";
+	$_SESSION['fblogin_status'] = "no_user";
 }
 
 
@@ -70,14 +90,4 @@ if($db->hasOauth($user_id, "twitter") == 0){ //new user
 	$twitterUrl = '#';
 	$twitterUrlText = '';
 }	
-
-$fbUser = "";
-$fbUrlText = "";
-$fbUserImg = "img/default.png";
-if(empty($fbUserID)){ //has no current fb user
-	$fbUrlText = " Login";
-}else{
-	$fbUser = $fbOauthdata[0]['name'];
-	$fbUserImg = $fbOauthdata[0]['pic_small'];
-}
 ?>

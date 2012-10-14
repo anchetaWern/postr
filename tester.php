@@ -72,7 +72,7 @@ $attachment = array(
 require_once('class.networks.php');
 $networks = new networks();
 print_r($networks->fba($attachment));
- */
+
 
 $config['FB_KEY'] = '355248497890497';
 $config['FB_SECRET'] = 'a856b0b1f46f0481785812d0ce55e23f';
@@ -158,5 +158,23 @@ echo '<br/>';
 echo 'FACEBOOK ID: '.$networks->getFBID();
 echo '<hr/>';
 //$networks->postToFbProfile("post using app access token only", "", "http://anchetawern.github.com", '');
+
+require_once('class.networks.php');
+$networks = new networks();
+require_once('class.db.php');
+$db = new db();
+echo $networks->hasFbUser();
+echo "<br/>";
+
+$oAuthData = $db->getOauth("1", "facebook");
+echo  $oAuthData['oauth_id'];
+echo "<br/>";
+if($oAuthData['oauth_id'] == $networks->hasFbUser()){
+	echo "yep!";
+}
  */
+//echo $_SESSION['fblogin_status'];
+require_once('class.db.php');
+$db = new db();
+echo $db->verifyOauthUser($user_id, $oauth_id, $provider)
 ?>

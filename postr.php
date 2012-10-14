@@ -57,7 +57,7 @@ if(empty($_SESSION['uid'])){
 				<form id="settings_form">
 					<p>
 						<label data-for="facebook">
-							<img id="fb_pic" src="<?php echo $fbUserImg ?>" width="48px" height="48px"/>
+							<img id="fb_pic" src="<?php echo $fbUserImg; ?>" width="48px" height="48px"/>
 							<input type="checkbox" id="facebook">
 							<a href="#" class="facebook_settings">Facebook</a>
 							<a href="#" id="facebook_login" class="login_links"><?php echo $fbUrlText; ?></a>
@@ -267,102 +267,212 @@ include('includes/footer.php');
 			}
 		};
 
+		var getFbLoginStatus = function(){
+			var loginstatus;
+
+			$.ajax({
+					type : 'post',
+					url : 'actions.php',
+					async: false,
+					data : {"action" : "get_fbloginstatus"}
+				}
+			).done(function(data){
+				loginstatus =  data;
+			});
+			return loginstatus;
+		};
+
+		var addFbList = function(fbLists, selectedFbList, listContainer, inputId, fbListType, fbClass, fbImage, prefix){
+			if(!fbLists){
+				fbLists = {};
+			}
+
+			//check if list has already been added before
+			if(!!!fbLists[selectedFbList[fbListType + '_id']]){
+				//list doesn't exist yet
+				$('#' + inputId).val('');
+				$('#' + inputId).focus();
+
+				var current_fb_list = $('#' + listContainer);
+				var fb_list = $("<div>");
+
+				if(fbImage){
+					var list_img = $("<img>").attr("src", selectedFbList[fbListType + '_pic']);
+				}
+				
+				var list_name = $("<span>").text(selectedFbList[fbListType + '_name']);
+				var list_checkbox = $("<input>").attr({
+					"type" : "checkbox", 
+					"id" : selectedFbList[fbListType + '_id'], 
+					"class" : fbClass,
+					"checked" : true,
+					"data-listtype" : prefix,
+				}).addClass('fblist');
+
+				if(fbImage){
+					fb_list.append(list_img);
+				}
+				
+				fb_list.append(list_checkbox);
+				fb_list.append(list_name);
+				
+				current_fb_list.append(fb_list);
+
+				buildFbListSetting(prefix, selectedFbList, fbListType, fbImage); //saves into local storage
+				createFbSetting(selectedFbList, fbListType, prefix); //saves into database
+
+				noty_success.text = fbListType + " successfully added!";
+				noty(noty_success);
+			}else{ 
+				//list already exists
+				noty_err.text = fbListType + " has already been added before!";
+				noty(noty_err);
+			}		
+		};
+
+		var buildFbListSetting = function(prefix, selectedFbList, fbListType , fbImage){
+
+			if(!current_user['settings']['facebook'][prefix]){
+				current_user['settings']['facebook'][prefix] = {};
+			}
+			
+			//update the current user
+			var temp_userSettings = current_user['settings']['facebook'][prefix];
+
+			temp_userSettings[selectedFbList[fbListType + '_id']] = {};
+			temp_userSettings[selectedFbList[fbListType + '_id']][fbListType + "_name"] = selectedFbList[fbListType + '_name'];
+			temp_userSettings[selectedFbList[fbListType + '_id']][fbListType + "_status"] = 1;
+
+			if(fbImage){
+				temp_userSettings[fbListType + "_img"] = selectedFbList[fbListType + '_pic'];
+			}
+
+			//copy the thing back
+			current_user['settings']['facebook'][fbListType] = temp_userSettings;
+
+
+			//if this is the first list to be added to local storage initialize it
+			if(!current_users[current_user.uid]['settings']['facebook'][prefix]){
+				current_users[current_user.uid]['settings']['facebook'][prefix] = {};
+			}
+
+			//update local storage
+			current_users[current_user.uid]['settings']['facebook'][prefix] = temp_userSettings;
+
+			users.set('users', current_users);
+		};
+
+
+		var createFbSetting = function(selectedFbList, fbListType, prefix){
+
+			$.post('actions.php', {
+					'action' : 'create_fb_settings',
+					'type' : prefix,
+					'fb_id' : selectedFbList[fbListType + '_id'], 
+					'fb_name' : selectedFbList[fbListType + '_name'],
+					'img_url' : selectedFbList[fbListType + '_pic']
+			});
+
+		};
+
+
 		var loadFbData = function(){
-
-			FB.api('/' + current_user.fb_id, function(user){
-				$('#fb_user').text(user.name);
-				$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ current_user.fb_id +'/picture?type=square');
-			});
-
-
-			FB.api('/'+ current_user.fb_id +'/groups', function(groups){
-					var user_groups = groups.data;
-					var data_source = [];
-					
-					for(var index in user_groups){
-						var group_id = user_groups[index]['id'];
-						var group_name = user_groups[index]['name'];
-						data_source.push(
-							{
-							'value' : group_name,
-							'group_id' : group_id,
-							'group_name' : group_name
-							}
-						);
-					}
-					
-					loadFbAutocomplete('fb_groups', 'group', JSON.stringify(data_source), current_fb_group);
-			});
+			if(current_user.fb_id){
+				FB.api('/' + current_user.fb_id, function(user){
+					$('#fb_user').text(user.name);
+					$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ current_user.fb_id +'/picture?type=square');
+				});
 
 
-					
-			FB.api({
-				  method : 'fql.multiquery',
-				  queries: {
-					'q1' : 'SELECT page_id FROM page_admin WHERE uid = ' + current_user.fb_id,
-					'q2' : 'SELECT page_id, name, pic_small, description FROM page WHERE page_id IN (SELECT page_id FROM #q1)'
-				  }
-				}, 
-					function(data){
-					
-						var user_pages = data[1]['fql_result_set'];
+				FB.api('/'+ current_user.fb_id +'/groups', function(groups){
+						var user_groups = groups.data;
 						var data_source = [];
-						for(var x in user_pages){
-							var page_obj = user_pages[x];
-							
-							var page_id = page_obj['page_id'];
-							var page_name = page_obj['name'];
-							var page_description = page_obj['description'];
-							var page_pic = page_obj['pic_small']
-							
+						
+						for(var index in user_groups){
+							var group_id = user_groups[index]['id'];
+							var group_name = user_groups[index]['name'];
 							data_source.push(
 								{
-								'value' : page_name, 'page_name' : page_name, 
-								'page_id' : page_id, 'page_pic' : page_pic,
-								'page_description' : page_description
-								} 
+								'value' : group_name,
+								'group_id' : group_id,
+								'group_name' : group_name
+								}
 							);
-							
 						}
 						
-						$('#fb_pages').autocomplete({
-							source: data_source,
-							select: function(event, ui){
-								current_fb_page['page_id'] = ui['item']['page_id'];
-								current_fb_page['page_description'] = ui['item']['page_description'];
-								current_fb_page['page_name'] = ui['item']['page_name'];
-								current_fb_page['page_pic'] = ui['item']['page_pic'];
+						loadFbAutocomplete('fb_groups', 'group', JSON.stringify(data_source), current_fb_group);
+				});
+
+
+						
+				FB.api({
+					  method : 'fql.multiquery',
+					  queries: {
+						'q1' : 'SELECT page_id FROM page_admin WHERE uid = ' + current_user.fb_id,
+						'q2' : 'SELECT page_id, name, pic_small, description FROM page WHERE page_id IN (SELECT page_id FROM #q1)'
+					  }
+					}, 
+						function(data){
+						
+							var user_pages = data[1]['fql_result_set'];
+							var data_source = [];
+							for(var x in user_pages){
+								var page_obj = user_pages[x];
+								
+								var page_id = page_obj['page_id'];
+								var page_name = page_obj['name'];
+								var page_description = page_obj['description'];
+								var page_pic = page_obj['pic_small']
+								
+								data_source.push(
+									{
+									'value' : page_name, 'page_name' : page_name, 
+									'page_id' : page_id, 'page_pic' : page_pic,
+									'page_description' : page_description
+									} 
+								);
+								
 							}
-						}).data("autocomplete")._renderItem = function(ul, item){
-							return $("<li></li>")
-							.data("item.autocomplete", item)
-							.append("<a id='"+  item.page_id +"'>" + "<img src='" + item.page_pic + "' />" + item.page_name+ "</a>" )
-							.appendTo( ul );
-						};
-						
-						
+							
+							$('#fb_pages').autocomplete({
+								source: data_source,
+								select: function(event, ui){
+									current_fb_page['page_id'] = ui['item']['page_id'];
+									current_fb_page['page_description'] = ui['item']['page_description'];
+									current_fb_page['page_name'] = ui['item']['page_name'];
+									current_fb_page['page_pic'] = ui['item']['page_pic'];
+								}
+							}).data("autocomplete")._renderItem = function(ul, item){
+								return $("<li></li>")
+								.data("item.autocomplete", item)
+								.append("<a id='"+  item.page_id +"'>" + "<img src='" + item.page_pic + "' />" + item.page_name+ "</a>" )
+								.appendTo( ul );
+							};
+							
+							
+						}
+				);
+
+				FB.api('/' + current_user.fb_id +'/friendlists', function(friendlists){
+					var user_friendlist = friendlists.data;
+					var data_source = [];
+
+					for(var index in user_friendlist){
+						var list_id = user_friendlist[index]['id'];
+						var list_name = user_friendlist[index]['name'];
+
+						data_source.push({
+							'value' : list_name,
+							'list_id' : list_id,
+							'list_name' : list_name	
+						});
 					}
-			);
 
-			FB.api('/' + current_user.fb_id +'/friendlists', function(friendlists){
-				var user_friendlist = friendlists.data;
-				var data_source = [];
+					loadFbAutocomplete('fb_lists', 'list', JSON.stringify(data_source), current_fb_list);
 
-				for(var index in user_friendlist){
-					var list_id = user_friendlist[index]['id'];
-					var list_name = user_friendlist[index]['name'];
-
-					data_source.push({
-						'value' : list_name,
-						'list_id' : list_id,
-						'list_name' : list_name	
-					});
-				}
-
+				});
 				
-				loadFbAutocomplete('fb_lists', 'list', JSON.stringify(data_source), current_fb_list);
-
-			});
+			}
 		};
 
 		
@@ -482,6 +592,44 @@ include('includes/footer.php');
 				return false;
 			}
 		};
+
+		var loadFbAutocomplete = function(autocompleteID, prefix, dataSource, currentList){
+	  	$('#' + autocompleteID).autocomplete({
+				source: JSON.parse(dataSource),
+				select: function(event, ui){
+					currentList[prefix + '_id'] = ui['item'][prefix + '_id'];
+					currentList[prefix + '_name'] = ui['item'][prefix + '_name'];
+				}
+			});
+	  };
+
+	  var verifyFbUser = function(fbuser_id){
+	  	var oauth_count;
+	  	$.ajax({
+					type : 'post',
+					url : 'actions.php',
+					async: false,
+					data : {"action" : "verify_fbuser", "fbuser_id" : fbuser_id}
+	  	}).done(function(data){
+	  		oauth_count = data;
+
+	  	});
+	  	return oauth_count;
+	  };
+
+	  var updateFbAccessToken = function(fbAccessToken){
+			if(current_user.fb_id){
+				$.post(
+					"actions.php", 
+					{
+					"action" : "update_oauth",	
+					"provider" : "facebook", "oauth_id" : current_user.fb_id, 
+					"oauth_token" : fbAccessToken,
+					"username" : current_user.fb_name
+					}
+				);
+			}
+		};
 		
 		$('#settings_form input[type=checkbox]').click(function(){
 			
@@ -528,16 +676,6 @@ include('includes/footer.php');
 		
 	  };
 
-	  var loadFbAutocomplete = function(autocompleteID, prefix, dataSource, currentList){
-	  	$('#' + autocompleteID).autocomplete({
-				source: JSON.parse(dataSource),
-				select: function(event, ui){
-					currentList[prefix + '_id'] = ui['item'][prefix + '_id'];
-					currentList[prefix + '_name'] = ui['item'][prefix + '_name'];
-				}
-			});
-	  };
-	  
 	  (function(d){
 	     var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
 	     if (d.getElementById(id)) {return;}
@@ -546,141 +684,42 @@ include('includes/footer.php');
 	     ref.parentNode.insertBefore(js, ref);
 	   }(document));
 
-		$('#facebook_login').click(function(e){
+	  $('#facebook_logout').live('click', function(){
+	  	FB.logout(function(){
+	  		noty_success.text = "Facebook user successfully logged out!";
+	  		noty(noty_success);
+	  		$("#facebook_login").text(' Login');
+	  		$("#fb_user").empty();
+	  	});
+	  });
+
+		$('#facebook_login').live('click', function(e){
 			e.preventDefault();
 			FB.login(function(response){
 				if(response.authResponse){
 					FB.api('/me', function(user){
-			
-						current_user.fb_id = user.id;
-						current_user.fb_name = user.name;
-
-						$('#facebook_login').hide();
-						$('#fb_user').text(user.name);
-						$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ user.id +'/picture?type=square');
-
-						var fbAccessToken = FB.getAccessToken();
-						updateFbAccessToken(fbAccessToken);
-						loadFbData();
-
 						
+						var verifiedFbUser = verifyFbUser(user.id);
+
+						if(parseInt(verifiedFbUser)){
+							current_user.fb_id = user.id;
+							current_user.fb_name = user.name;
+
+							$('#facebook_login').hide();
+							$('#fb_user').text(user.name);
+							$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ user.id +'/picture?type=square');
+
+							var fbAccessToken = FB.getAccessToken();
+							updateFbAccessToken(fbAccessToken);
+							loadFbData();
+						}else{
+							$("#fb_user").html("Unknown user <a href='#' id='facebook_logout'>Logout</a>");
+						}
 					});
 				}
 			});
 		});
 
-		var updateFbAccessToken = function(fbAccessToken){
-			$.post(
-				"actions.php", 
-				{
-				"action" : "update_oauth",	
-				"provider" : "facebook", "oauth_id" : current_user.fb_id, 
-				"oauth_token" : fbAccessToken,
-				"username" : current_user.fb_name
-				}
-			);
-		};
-
-		var getFbLoginStatus = function(){
-			var fbLoginStatus = 'not_connected';
-			FB.getLoginStatus(function(response){
-				fbLoginStatus = response.status;
-			});
-			return fbLoginStatus;
-		};
-
-		var addFbList = function(fbLists, selectedFbList, listContainer, inputId, fbListType, fbClass, fbImage, prefix){
-			if(!fbLists){
-				fbLists = {};
-			}
-
-			//check if list has already been added before
-			if(!!!fbLists[selectedFbList[fbListType + '_id']]){
-				//list doesn't exist yet
-				$('#' + inputId).val('');
-				$('#' + inputId).focus();
-
-				var current_fb_list = $('#' + listContainer);
-				var fb_list = $("<div>");
-
-				if(fbImage){
-					var list_img = $("<img>").attr("src", selectedFbList[fbListType + '_pic']);
-				}
-				
-				var list_name = $("<span>").text(selectedFbList[fbListType + '_name']);
-				var list_checkbox = $("<input>").attr({
-					"type" : "checkbox", 
-					"id" : selectedFbList[fbListType + '_id'], 
-					"class" : fbClass,
-					"checked" : true,
-					"data-listtype" : prefix,
-				}).addClass('fblist');
-
-				if(fbImage){
-					fb_list.append(list_img);
-				}
-				
-				fb_list.append(list_checkbox);
-				fb_list.append(list_name);
-				
-				current_fb_list.append(fb_list);
-
-				buildFbListSetting(prefix, selectedFbList, fbListType, fbImage); //saves into local storage
-				createFbSetting(selectedFbList, fbListType, prefix); //saves into database
-
-				noty_success.text = fbListType + " successfully added!";
-				noty(noty_success);
-			}else{ 
-				//list already exists
-				noty_err.text = fbListType + " has already been added before!";
-				noty(noty_err);
-			}		
-		};
-
-		var buildFbListSetting = function(prefix, selectedFbList, fbListType , fbImage){
-
-			if(!current_user['settings']['facebook'][prefix]){
-				current_user['settings']['facebook'][prefix] = {};
-			}
-			
-			//update the current user
-			var temp_userSettings = current_user['settings']['facebook'][prefix];
-
-			temp_userSettings[selectedFbList[fbListType + '_id']] = {};
-			temp_userSettings[selectedFbList[fbListType + '_id']][fbListType + "_name"] = selectedFbList[fbListType + '_name'];
-			temp_userSettings[selectedFbList[fbListType + '_id']][fbListType + "_status"] = 1;
-
-			if(fbImage){
-				temp_userSettings[fbListType + "_img"] = selectedFbList[fbListType + '_pic'];
-			}
-
-			//copy the thing back
-			current_user['settings']['facebook'][fbListType] = temp_userSettings;
-
-
-			//if this is the first list to be added to local storage initialize it
-			if(!current_users[current_user.uid]['settings']['facebook'][prefix]){
-				current_users[current_user.uid]['settings']['facebook'][prefix] = {};
-			}
-
-			//update local storage
-			current_users[current_user.uid]['settings']['facebook'][prefix] = temp_userSettings;
-
-			users.set('users', current_users);
-		};
-
-
-		var createFbSetting = function(selectedFbList, fbListType, prefix){
-
-			$.post('actions.php', {
-					'action' : 'create_fb_settings',
-					'type' : prefix,
-					'fb_id' : selectedFbList[fbListType + '_id'], 
-					'fb_name' : selectedFbList[fbListType + '_name'],
-					'img_url' : selectedFbList[fbListType + '_pic']
-			});
-
-		};
 
 		$('.create_fb_lists').click(function(e){
 			e.preventDefault();

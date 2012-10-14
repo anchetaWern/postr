@@ -227,6 +227,15 @@ class db{
 		
 	}
 
+	public function verifyOauthUser($user_id, $oauth_id, $provider){
+		
+		$oAuthUser = $this->conn->query("
+			SELECT user_id FROM tbl_oauth 
+			WHERE user_id = '$user_id' AND oauth_id = '$oauth_id' AND provider = '$provider'
+		");
+		return $oAuthUser->num_rows;
+	}
+
 	public function getTwitterUserTokens($user_id){
 
 		$tokens = array();

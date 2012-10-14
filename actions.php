@@ -150,6 +150,7 @@ switch($action){
 	break;
 
 	case 'update_oauth':
+
 		$provider = $_POST['provider'];
 		$username = $_POST['username'];
 		$oauthID = $_POST['oauth_id'];
@@ -158,12 +159,15 @@ switch($action){
 		if($db->hasOauth($_SESSION['uid'], "facebook") == 0){
 			$db->createOauth($_SESSION['uid'], $oauthID, $provider, $oauthToken, "", $username);
 		}else{
-			$db->updateOauth($_SESSION['uid'], $provider, $oauthToken, "");
+			if($db->verifyOauthUser($_SESSION['uid'], $oauthID, $provider) == 1){
+				
+				$db->updateOauth($_SESSION['uid'], $provider, $oauthToken, "");
+				$_SESSION['fbuser_id'] = $oauthID;
+				$_SESSION['fbuser_name'] = $username;
+				$_SESSION['fblogin_status'] = 'verified_user';
+			}
 		}
 
-		$_SESSION['fbuser_id'] = $oauthID;
-		$_SESSION['fbuser_name'] = $username;
-		
 	break;
 
 	case 'get_uid':
@@ -177,6 +181,17 @@ switch($action){
 			echo json_encode($fbuser);
 		}
 		
+	break;
+
+	case 'verify_fbuser':
+
+		$fbuser_id = $_POST['fbuser_id'];
+		$oauth_count = $db->verifyOauthUser($_SESSION['uid'], $fbuser_id, "facebook");
+		echo $oauth_count;
+	break;
+
+	case 'get_fbloginstatus':
+		echo $_SESSION['fblogin_status'];
 	break;
 	
 	case 'logout':
@@ -208,7 +223,7 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 		);
 	}
 
-	if($fbloginstatus == 'connected' || !empty($_SESSION['fbuser_id'])){
+	if($fbloginstatus == 'verified_user' || !empty($_SESSION['fbuser_id'])){
 		if($fbSetting == 1){
 
 			$friendList = array();
