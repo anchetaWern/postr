@@ -26,36 +26,6 @@ $twitterUrlText = ' Login';
 $twitterUserImg = 'img/default.png';
 $twitterUserName = '';
 
-//facebook defaults
-$fbUser = "";
-$fbUrlText = "";
-$fbUserImg = "img/default.png";
-
-$oAuthData = $db->getOauth($user_id, "facebook");
-if(!empty($oAuthData) && $networks->hasFbUser() == $oAuthData['oauth_id']){
-
-	$fbUserID = $oAuthData['oauth_id'];
-	$fbOauthdata = $networks->getFbUser($fbUserID);
-	$_SESSION['fbuser_id'] = $fbUserID;
-	$_SESSION['fbuser_name'] = $fbOauthdata[0]['name'];
-
-	$fbUser = $fbOauthdata[0]['name'];
-	$fbUserImg = $fbOauthdata[0]['pic_small'];
-
-	$_SESSION['fblogin_status'] = "verified_user";
-
-}else if($networks->hasFbUser()){
-
-	$fbUserID = $oAuthData['oauth_id'];
-	$fbUser = "Unknown user <a href='#' id='facebook_logout'>Logout</a>";
-
-	$_SESSION['fblogin_status'] = "unknown_user";
-}else{
-	$fbUrlText = " Login";
-	$_SESSION['fblogin_status'] = "no_user";
-}
-
-
 
 if($db->hasOauth($user_id, "twitter") == 0){ //new user
 	if(!isset($_SESSION['twitteruser_token'], $_SESSION['twitteruser_secret'])){

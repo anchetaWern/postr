@@ -1,6 +1,5 @@
 <?php
 session_start();
-header('Content-type: text/html; charset=utf-8');
 require_once('includes/header.php');
 require_once('init.php');
 
@@ -60,7 +59,7 @@ if(empty($_SESSION['uid'])){
 							<img id="fb_pic" src="<?php echo $fbUserImg; ?>" width="48px" height="48px"/>
 							<input type="checkbox" id="facebook">
 							<a href="#" class="facebook_settings">Facebook</a>
-							<a href="#" id="facebook_login" class="login_links"><?php echo $fbUrlText; ?></a>
+							
 							<span id="fb_user"><?php echo $fbUser; ?></span>
 						
 					</p>
@@ -180,21 +179,90 @@ include('includes/footer.php');
 	
 		$(document).foundationTabs();
 		
-		var getCurrentFbUser = function(){
+		var setCurrentFbUser = function(){
 			$.post(
 				'actions.php',
 				{'action' : 'get_fbuser'},
-				function(fbuser){
-					if(fbuser){
-						fbuser = JSON.parse(fbuser);
-						current_user.fb_id = fbuser['fbuser_id'];
-						current_user.fb_name = fbuser['fbuser_name'];
+				function(data){
+					if(data){
+						data = JSON.parse(data);
+						current_user.fb_id = data['fb_id'];
+						current_user.fb_name = data['fb_user'];
+						current_user.fb_pic = data['fb_pic'];
 					}
 				}
 			);
 		};
 
-		getCurrentFbUser();
+		var getFbLoginStatus = function(){
+			var loginstatus;
+
+			$.ajax({
+					type : 'post',
+					url : 'actions.php',
+					async: false,
+					data : {"action" : "get_fbuser"}
+				}
+			).done(function(data){
+				data = JSON.parse(data);
+				loginstatus =  data['fb_status'];
+			});
+			return loginstatus;
+		};
+
+		var setFbSettings = function(fbLoginStatus){
+			switch(fbLoginStatus){
+				case 'verified_user':
+
+					$('#fb_user').text(current_user.fb_name);
+					$('#fb_pic').attr('src', current_user.fb_pic);
+				break;
+
+				case 'unknown_user':
+
+					var fb_logoutlink = $("<a>").attr({
+						"href" : "#", "class" : "logout_links", 
+						"id" : "facebook_logout"
+					}).text(' logout');
+
+					fb_logoutlink.insertAfter($('.facebook_settings'));
+
+					$('#fb_user').empty();
+					$('#fb_pic').attr('src', 'img/default.png');
+				break;
+
+				case 'no_user':
+
+					var fb_loginlink = $("<a>").attr({
+						"href" : "#", "class" : "login_links", 
+						"id" : "facebook_login"
+					}).text(' login');
+
+					fb_loginlink.insertAfter($('.facebook_settings'));
+
+					$('#fb_user').empty();
+					$('#fb_pic').attr('src', 'img/default.png');
+				break;
+			}
+		};
+
+		var buildFbSettings = function(fbID, fb_user, fb_status, fb_pic){
+			$.post(
+				'actions.php',
+				{
+					'action' : 'build_settings',
+					'fb_id' : fbID,
+					'fb_user' : fb_user,
+					'fb_status' : fb_status,
+					'fb_pic' : fb_pic
+				}
+			);
+		};
+
+		setCurrentFbUser();
+		var fbLoginStatus = getFbLoginStatus();
+		setFbSettings(fbLoginStatus);
+		
 
 		$.post(
 			'actions.php',
@@ -267,20 +335,7 @@ include('includes/footer.php');
 			}
 		};
 
-		var getFbLoginStatus = function(){
-			var loginstatus;
 
-			$.ajax({
-					type : 'post',
-					url : 'actions.php',
-					async: false,
-					data : {"action" : "get_fbloginstatus"}
-				}
-			).done(function(data){
-				loginstatus =  data;
-			});
-			return loginstatus;
-		};
 
 		var addFbList = function(fbLists, selectedFbList, listContainer, inputId, fbListType, fbClass, fbImage, prefix){
 			if(!fbLists){
@@ -503,6 +558,8 @@ include('includes/footer.php');
 				}
 			);
 		});
+
+
 		
 		$('#post_status').click(function(e){
 			e.preventDefault();
@@ -603,13 +660,16 @@ include('includes/footer.php');
 			});
 	  };
 
-	  var verifyFbUser = function(fbuser_id){
+	  var verifyFbUser = function(fbuser_id, fb_username, fb_userimage){
 	  	var oauth_count;
 	  	$.ajax({
 					type : 'post',
 					url : 'actions.php',
 					async: false,
-					data : {"action" : "verify_fbuser", "fbuser_id" : fbuser_id}
+					data : {
+						"action" : "verify_fbuser", "fbuser_id" : fbuser_id,
+						"fb_id" : fbuser_id, "fb_user" : fb_username, "fb_pic" : fb_userimage
+					}
 	  	}).done(function(data){
 	  		oauth_count = data;
 
@@ -662,11 +722,11 @@ include('includes/footer.php');
 
 		(function(){
 			FB.getLoginStatus(function(response){
+				
 			  if (response.status === 'connected'){
 			  	
 			  	var fbAccessToken = FB.getAccessToken();
 					updateFbAccessToken(fbAccessToken);
-
 			  	loadFbData();
 
 			  } 
@@ -699,22 +759,49 @@ include('includes/footer.php');
 				if(response.authResponse){
 					FB.api('/me', function(user){
 						
-						var verifiedFbUser = verifyFbUser(user.id);
+						var verifiedFbUser;
 
-						if(parseInt(verifiedFbUser)){
-							current_user.fb_id = user.id;
-							current_user.fb_name = user.name;
+						FB.api({
+							method : 'fql.query',
+							query : 'SELECT name, pic_small FROM user WHERE uid=me()'
+						}, function(data){
+								var fb_user = data[0]['name'];
+								var fb_status = "verified_user";
+								var fb_pic = data[0]['pic_small'];
 
-							$('#facebook_login').hide();
-							$('#fb_user').text(user.name);
-							$('#fb_pic').attr('src', 'http://graph.facebook.com/'+ user.id +'/picture?type=square');
+								verifiedFbUser = verifyFbUser(user.id, fb_user, fb_pic);
+								
 
-							var fbAccessToken = FB.getAccessToken();
-							updateFbAccessToken(fbAccessToken);
-							loadFbData();
-						}else{
-							$("#fb_user").html("Unknown user <a href='#' id='facebook_logout'>Logout</a>");
-						}
+								FB.getLoginStatus(function(response){
+									 if(response.status === "connected"){
+
+									 		buildFbSettings(user.id, fb_user, "verified_user", fb_pic);
+									 }else if(response.status === "not_authorized"){
+
+									 		buildFbSettings("", "", "unknown_user", "img/default.png");
+									 }else{
+
+									 		buildFbSettings("", "", "no_user", "img/default.png");
+									 }
+
+									var fbLoginStatus = getFbLoginStatus();
+									setFbSettings(fbLoginStatus);
+
+									if(parseInt(verifiedFbUser)){
+										
+										current_user.fb_id = user.id;
+										current_user.fb_name = user.name;
+
+										var fbAccessToken = FB.getAccessToken();
+										updateFbAccessToken(fbAccessToken);
+										loadFbData();
+										$('#facebook_login').hide();
+									}
+								});
+
+						});
+
+
 					});
 				}
 			});

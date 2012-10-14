@@ -64,6 +64,21 @@ switch($action){
 		
 	break;
 
+	case 'build_settings':
+
+		//facebook default settings
+		$fbID = $_POST['fb_id'];
+		$fbUser = $_POST['fb_user'];
+		$fbStatus = $_POST['fb_status'];
+		$fbUserImg = $_POST['fb_pic'];
+
+		$_SESSION['fb_user'] = array(
+			'fb_id' => $fbID, 'fb_user' => $fbUser, 
+			'fb_status' => $fbStatus, 'fb_img' => $fbUserImg
+		);
+
+	break;
+
 	case 'load_settings':
 
 		$user_settings = $db->loadUserSettings();
@@ -176,22 +191,27 @@ switch($action){
 	break;
 
 	case 'get_fbuser':
-		if(!empty($_SESSION['fbuser_id']) && !empty($_SESSION['fbuser_name'])){
-			$fbuser = array("fbuser_id" => $_SESSION['fbuser_id'], "fbuser_name" => $_SESSION['fbuser_name']);
-			echo json_encode($fbuser);
-		}
+		
+		echo json_encode($_SESSION['fb_user']);
 		
 	break;
 
 	case 'verify_fbuser':
 
 		$fbuser_id = $_POST['fbuser_id'];
-		$oauth_count = $db->verifyOauthUser($_SESSION['uid'], $fbuser_id, "facebook");
-		echo $oauth_count;
-	break;
+		$fbUser = $_POST['fb_user'];
+		$fbUserImg = $_POST['fb_pic'];
+		$oauth_count = $db->verifyOauthUser(1, $fbuser_id, "facebook");
 
-	case 'get_fbloginstatus':
-		echo $_SESSION['fblogin_status'];
+
+		if($oauth_count){
+			$_SESSION['fb_user'] = array(
+				'fb_id' => $fbuser_id, 'fb_user' => $fbUser, 
+				'fb_status' => 'verified_user', 'fb_img' => $fbUserImg
+			);
+		}
+
+		echo $oauth_count;
 	break;
 	
 	case 'logout':

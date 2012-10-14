@@ -107,6 +107,21 @@ class networks{
 		return $this->facebook->getUser();
 	}
 
+	public function boom(){
+		$voom = "";
+		try {
+   	 $me = $this->facebook->api('/me');
+    if ($me) {
+      //User is logged in
+      $voom =  "yep";
+    }
+	  } catch (FacebookApiException $e) {
+	    //User is not logged in
+	    $voom = "nopes";
+	  }
+	  return $voom;
+	}
+
 	public function getFbLoginUrl(){
 		$scope = "user_about_me,email,read_friendlists,publish_stream,manage_pages,user_groups,user_photos";
 		$redirect_url = "http://127.0.0.1:8020/postr/postr.php";
