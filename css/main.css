@@ -84,9 +84,12 @@
 }
 
 .tumblr_posttypes li p { 
-   
     font-size: 12px; 
     font-style: normal;
-      margin-left: 33px;
+    margin-left: 33px;
     margin-top: -25px;
+}
+
+.enabled_icons{
+    color:#2BA6CB;
 }

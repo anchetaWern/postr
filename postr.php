@@ -67,7 +67,7 @@ if(empty($_SESSION['uid'])){
 						<label data-for="twitter">
 							<img id="twitter_pic" src="<?php echo $twitterUserImg; ?>" width="48px" height="48px"/>
 							<input type="checkbox" id="twitter">
-							<a href="#" class="network_settings">Twitter</a>
+							<a href="#" class="twitter_settings">Twitter</a>
 							<a href="<?php echo $twitterLoginText; ?>" id="twitter_login" class="login_links"> 
 								<?php echo $twitterLoginText; ?>
 							</a>
@@ -79,7 +79,7 @@ if(empty($_SESSION['uid'])){
 						<label data-for="tumblr">
 							<img id="tumblr_pic" src="<?php echo $tumblrPic; ?>" width="48px" height="48px"/>
 							<input type="checkbox" id="tumblr">
-							<a href="#" class="network_settings">Tumblr</a>
+							<a href="#" class="tumblr_settings">Tumblr</a>
 							<a href="<?php echo $tumblrLogin; ?>" id="tumblr_login" class="login_links">
 								<?php echo $tumblrLoginText; ?> 
 							</a>
@@ -171,23 +171,23 @@ if(empty($_SESSION['uid'])){
 			<span>Post Type</span>
 			
 			<ul class="tumblr_posttypes">
-				<li>
+				<li data-postype="text">
 					<i class="large-icons foundicon-edit">
 						<p>Text</p>
 					</i>
 				</li>
 
-				<li>
+				<li data-postype="photo">
 					<i class="large-icons foundicon-photo">
 						<p>Photo</p>
 					</i>
 				</li>
-				<li>
+				<li data-postype="video">
 					<i class="large-icons foundicon-video">
 						<p>Video</p>
 					</i>
 				</li>
-				<li>
+				<li data-postype="quote">
 					<i class="large-icons foundicon-idea">
 						<p>Quote</p>
 					</i>
@@ -324,6 +324,11 @@ include('includes/footer.php');
 					});
 				}else{
 					current_user.settings = users.get('users')[current_user.uid]['settings'];
+
+					//default tumblr settings
+					current_user.settings.tumblr.posttype = "text";
+					current_users[current_user.uid].settings.tumblr.posttype = "text";
+					$('li[data-postype=text] i').addClass('enabled_icons');
 					loadSettings();
 				}
 			}
@@ -585,6 +590,10 @@ include('includes/footer.php');
 		$('.facebook_settings').live('click', function(e){
 			e.preventDefault();
 			$('#facebook_modal').reveal();
+		});
+
+		$('.tumblr_settings').live('click', function(){
+			$('#tumblr_modal').reveal();
 		});
 
 		$('#back_to_settings, #settings').click(function(e){
@@ -935,6 +944,17 @@ include('includes/footer.php');
 
 			$.post('actions.php', {'action' : 'multipost', 'status' : status});
 		});
+
+		var getTumblrPostType = function(status){
+
+			var hasPhoto !!$('#file_to_upload').children().length;
+			var hasText = !!status;
+			var hasQuote = !!/"+\w+(\w|\s)+"/.test(status);
+
+			var videoRegex = new RegExp("^(http|https)://(youtu|www.youtube|vimeo|youtube)\.(be|com)/[A-Za-z0-9\?&=]+$");
+			var hasVideo = !!videoRegex.test(status);
+
+		};
 		
 		$('#status').keydown(function(){
 			remaining_chars();
@@ -1104,6 +1124,16 @@ include('includes/footer.php');
 				$('#char_limit').hide();
 			}
 		};
+
+
+		$('.tumblr_posttypes li').click(function(){
+			var posttype = $(this).data('postype');
+			current_user.settings.tumblr.posttype = posttype;
+			current_users[current_user.uid].settings.tumblr.posttype = posttype;
+
+			$('.tumblr_posttypes li i').removeClass('enabled_icons');
+			$(this).children('i').addClass('enabled_icons');
+		});
 		
 	</script>
 </html>
