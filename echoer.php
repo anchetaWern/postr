@@ -1,4 +1,6 @@
 <?php
 session_start();
-print_r($_SESSION['fb_user']);
+require_once('class.networks.php');
+$nets = new networks();
+echo $nets->getConfig('TUMBLR_LOGIN');
 ?>

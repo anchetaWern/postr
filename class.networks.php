@@ -6,6 +6,10 @@ class networks{
 	private $twitter_usertoken;
 	private $twitter_usersecret;
 	private $facebook_ID;
+	private $tumblrUser;
+	private $tumblrBlog;
+	private $tumblrBlogName;
+	private $tumblrAuth;
 
 	private $facebook;
 
@@ -15,6 +19,7 @@ class networks{
 		require_once('libs/eden/eden.php');
 		require_once('libs/eden/eden/twitter.php');
 		require_once('libs/facebook/facebook.php');
+		require_once('libs/eden/eden/tumblr.php');
 		
 		$this->config = $config;
 
@@ -36,10 +41,36 @@ class networks{
 			$this->facebook_ID = $_SESSION['fbuser_id'];
 		}
 
+		if(!empty($_SESSION['tumblr_access_token']) && !empty($_SESSION['tumblr_access_secret'])){
+			$this->tumblrUser = eden('tumblr')->user(
+				$this->config['TUMBLR_KEY'], $this->config['TUMBLR_SECRET'], 
+				$_SESSION['tumblr_access_token'], $_SESSION['tumblr_access_secret']
+			);
+
+			$this->tumblrBlog = eden('tumblr')->blog(
+				$this->config['TUMBLR_KEY'], $this->config['TUMBLR_SECRET'], 
+				$_SESSION['tumblr_access_token'], $_SESSION['tumblr_access_secret']
+			);
+
+		}else{
+			$this->tumblrAuth = eden('tumblr')->auth(
+				$this->config['TUMBLR_KEY'], $this->config['TUMBLR_SECRET']
+			);
+		}
+
+
+	}
+
+	public function getfbid(){
+		return $this->facebook_ID;
 	}
 
 	public function getAccess(){
 		return $this->config['FB_TOKEN'];
+	}
+
+	public function getConfig($key){
+		return $this->config[$key];
 	}
 
 	public function setTwitterRequestToken(){
@@ -267,6 +298,71 @@ class networks{
 		}
 
 		return $statusContents;
+	}
+
+	public function setTumblrBlog($blogName, $blogTitle){
+		$this->tumblrBlogName = $blogName;
+		$this->tumblrBlogTitle = $blogTitle;
+	}
+
+	public function getTumblrLogin(){
+
+	  $token = $this->tumblrAuth->getRequestToken();
+	  $_SESSION['tumblr_request_secret'] = $token['oauth_token_secret'];
+	  $login = $this->tumblrAuth->getLoginUrl($token['oauth_token'], $this->config['TUMBLR_LOGIN']);
+       	
+    return $login;
+	}
+
+	public function unsetTumblrRequest($oauth_token = '', $oauth_verifier = ''){
+		
+    $token = $this->tumblrAuth->debug(true)->getAccessToken($oauth_token, $_SESSION['tumblr_request_secret'], $oauth_verifier);
+    
+    $_SESSION['tumblr_access_token']   = $token['oauth_token'];
+    $_SESSION['tumblr_access_secret']  = $token['oauth_token_secret'];
+   
+    unset($_SESSION['tumblr_request_secret']);
+	}
+
+	public function getTumblrUserInfo(){
+		
+		$userData = $this->tumblrUser->getInfo();
+
+    $blogName = substr($userData['response']['user']['blogs'][0]['url'], 7, -1);
+    $blogTitle = $userData['response']['user']['blogs'][0]['title']; 
+    $this->setTumblrBlog($blogName, $blogTitle);
+
+		$userAvatar = $this->tumblrBlog->setSize(50)->getAvatar($blogName);
+
+   	$userInfo = array(
+    	"user_name" => $userData['response']['user']['name'],
+    	"user_avatar" => $userAvatar['response']['avatar_url'],
+    	"blog_name" => $blogName,
+    	"blog_title" => $blogTitle
+    );
+
+    return $userInfo;
+	}
+
+
+	public function postTumblrText($title, $body){
+		$response = $this->tumblrBlog->postText($this->tumblrBlogName, $title, $body);
+		return $response;
+	}
+
+	public function postTumblrQuote($quote){
+		$response = $this->tumblrBlog->postQuote($this->tumblrBlogName, $quote);
+		return $response;
+	}
+
+	public function postTumblrPhoto($image){
+		$response = $this->tumblrBlog->postPhoto($this->tumblrBlogName, $image);
+		return $response;
+	}
+
+	public function postTumblrVideo($video){
+		$response = $this->tumblrBlog->postVideo($this->tumblrBlogName, $video);
+		return $response;
 	}
 
 }

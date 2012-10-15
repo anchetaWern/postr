@@ -227,6 +227,13 @@ class db{
 		
 	}
 
+	public function hasAuth($user_id, $provider){
+		$selectAuth = $this->conn->query("
+			SELECT user_id FROM tbl_oauth WHERE user_id = '$user_id' AND provider = '$provider'
+		");
+		return $selectAuth->num_rows;
+	}
+
 	public function verifyOauthUser($user_id, $oauth_id, $provider){
 		
 		$oAuthUser = $this->conn->query("

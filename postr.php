@@ -59,7 +59,6 @@ if(empty($_SESSION['uid'])){
 							<img id="fb_pic" src="<?php echo $fbUserImg; ?>" width="48px" height="48px"/>
 							<input type="checkbox" id="facebook">
 							<a href="#" class="facebook_settings">Facebook</a>
-							
 							<span id="fb_user"><?php echo $fbUser; ?></span>
 						
 					</p>
@@ -69,10 +68,22 @@ if(empty($_SESSION['uid'])){
 							<img id="twitter_pic" src="<?php echo $twitterUserImg; ?>" width="48px" height="48px"/>
 							<input type="checkbox" id="twitter">
 							<a href="#" class="network_settings">Twitter</a>
-							<a href="<?php echo $twitterUrl; ?>" id="twitter_login" class="login_links"> 
-								<?php echo $twitterUrlText; ?>
+							<a href="<?php echo $twitterLoginText; ?>" id="twitter_login" class="login_links"> 
+								<?php echo $twitterLoginText; ?>
 							</a>
 							<span id="twitter_user"><?php echo $twitterUserName; ?></span>
+						</label>
+					</p>
+
+					<p>
+						<label data-for="tumblr">
+							<img id="tumblr_pic" src="<?php echo $tumblrPic; ?>" width="48px" height="48px"/>
+							<input type="checkbox" id="tumblr">
+							<a href="#" class="network_settings">Tumblr</a>
+							<a href="<?php echo $tumblrLogin; ?>" id="tumblr_login" class="login_links">
+								<?php echo $tumblrLoginText; ?> 
+							</a>
+							<span id="twitter_user"><?php echo $tumblrUserName; ?></span>
 						</label>
 					</p>
 				</form>
@@ -223,7 +234,7 @@ include('includes/footer.php');
 					var fb_logoutlink = $("<a>").attr({
 						"href" : "#", "class" : "logout_links", 
 						"id" : "facebook_logout"
-					}).text(' logout');
+					}).text(' Logout');
 
 					fb_logoutlink.insertAfter($('.facebook_settings'));
 
@@ -236,7 +247,7 @@ include('includes/footer.php');
 					var fb_loginlink = $("<a>").attr({
 						"href" : "#", "class" : "login_links", 
 						"id" : "facebook_login"
-					}).text(' login');
+					}).text(' Login');
 
 					fb_loginlink.insertAfter($('.facebook_settings'));
 
@@ -246,7 +257,7 @@ include('includes/footer.php');
 			}
 		};
 
-		var buildFbSettings = function(fbID, fb_user, fb_status, fb_pic){
+		var buildFbSettings = function(fbID, fb_user, fb_status, fb_pic, fb_accessToken){
 			$.post(
 				'actions.php',
 				{
@@ -254,7 +265,8 @@ include('includes/footer.php');
 					'fb_id' : fbID,
 					'fb_user' : fb_user,
 					'fb_status' : fb_status,
-					'fb_pic' : fb_pic
+					'fb_pic' : fb_pic,
+					'fb_access' : fb_accessToken
 				}
 			);
 		};
@@ -660,15 +672,14 @@ include('includes/footer.php');
 			});
 	  };
 
-	  var verifyFbUser = function(fbuser_id, fb_username, fb_userimage){
+	  var verifyFbUser = function(fbuser_id){
 	  	var oauth_count;
 	  	$.ajax({
 					type : 'post',
 					url : 'actions.php',
 					async: false,
 					data : {
-						"action" : "verify_fbuser", "fbuser_id" : fbuser_id,
-						"fb_id" : fbuser_id, "fb_user" : fb_username, "fb_pic" : fb_userimage
+						"action" : "verify_fbuser", "fbuser_id" : fbuser_id
 					}
 	  	}).done(function(data){
 	  		oauth_count = data;
@@ -748,8 +759,18 @@ include('includes/footer.php');
 	  	FB.logout(function(){
 	  		noty_success.text = "Facebook user successfully logged out!";
 	  		noty(noty_success);
-	  		$("#facebook_login").text(' Login');
-	  		$("#fb_user").empty();
+
+  			var fb_loginlink = $("<a>").attr({
+					"href" : "#", "class" : "login_links", 
+					"id" : "facebook_login"
+				}).text(' Login');
+
+				fb_loginlink.insertAfter($('.facebook_settings'));
+
+				$('#fb_user').empty();
+				$('#fb_pic').attr('src', 'img/default.png');
+	  
+	  		$("#facebook_logout").remove();
 	  	});
 	  });
 
@@ -769,23 +790,22 @@ include('includes/footer.php');
 								var fb_status = "verified_user";
 								var fb_pic = data[0]['pic_small'];
 
-								verifiedFbUser = verifyFbUser(user.id, fb_user, fb_pic);
-								
-
 								FB.getLoginStatus(function(response){
 									 if(response.status === "connected"){
-
-									 		buildFbSettings(user.id, fb_user, "verified_user", fb_pic);
+									 		var access_token = FB.getAccessToken();
+									 		buildFbSettings(user.id, fb_user, "verified_user", fb_pic, access_token);
 									 }else if(response.status === "not_authorized"){
 
-									 		buildFbSettings("", "", "unknown_user", "img/default.png");
+									 		buildFbSettings("", "", "unknown_user", "img/default.png", "");
 									 }else{
 
-									 		buildFbSettings("", "", "no_user", "img/default.png");
+									 		buildFbSettings("", "", "no_user", "img/default.png", "");
 									 }
 
 									var fbLoginStatus = getFbLoginStatus();
 									setFbSettings(fbLoginStatus);
+
+									verifiedFbUser = verifyFbUser(user.id);
 
 									if(parseInt(verifiedFbUser)){
 										
@@ -804,7 +824,7 @@ include('includes/footer.php');
 
 					});
 				}
-			});
+			}, {scope : 'user_about_me,email,read_friendlists,publish_stream,manage_pages,user_groups,user_photos'});
 		});
 
 

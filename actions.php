@@ -71,11 +71,19 @@ switch($action){
 		$fbUser = $_POST['fb_user'];
 		$fbStatus = $_POST['fb_status'];
 		$fbUserImg = $_POST['fb_pic'];
+		$fbAccess = $_POST['fb_access'];
+		$provider = 'facebook';
 
 		$_SESSION['fb_user'] = array(
 			'fb_id' => $fbID, 'fb_user' => $fbUser, 
 			'fb_status' => $fbStatus, 'fb_img' => $fbUserImg
 		);
+
+		$hasFbAccount =  $db->verifyOauthUser($_SESSION['uid'], $fbID, $provider);
+
+		if(!$db->hasAuth($fbID, "facebook") && !empty($fbID) && $hasFbAccount == 0){
+			$db->createOauth($_SESSION['uid'], $fbID, "facebook", $fbAccess, '', $fbUser);
+		}
 
 	break;
 
@@ -199,19 +207,15 @@ switch($action){
 	case 'verify_fbuser':
 
 		$fbuser_id = $_POST['fbuser_id'];
-		$fbUser = $_POST['fb_user'];
-		$fbUserImg = $_POST['fb_pic'];
-		$oauth_count = $db->verifyOauthUser(1, $fbuser_id, "facebook");
-
-
-		if($oauth_count){
-			$_SESSION['fb_user'] = array(
-				'fb_id' => $fbuser_id, 'fb_user' => $fbUser, 
-				'fb_status' => 'verified_user', 'fb_img' => $fbUserImg
-			);
-		}
-
+		$oauth_count = $db->verifyOauthUser($_SESSION['uid'], $fbuser_id, "facebook");
+ 
 		echo $oauth_count;
+	break;
+
+
+	case 'has_oauth':
+		$provider = $_POST['provider'];
+		echo $db->hasAuth($_SESSION['uid'], $provider);
 	break;
 	
 	case 'logout':

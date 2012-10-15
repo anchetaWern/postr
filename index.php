@@ -32,7 +32,7 @@ include('includes/footer.php');
 ?>		
 
 	<script>
-	var buildFbSettings = function(fbID, fb_user, fb_status, fb_pic){
+	var buildFbSettings = function(fbID, fb_user, fb_status, fb_pic, fb_accessToken){
 		$.post(
 			'actions.php',
 			{
@@ -40,7 +40,8 @@ include('includes/footer.php');
 				'fb_id' : fbID,
 				'fb_user' : fb_user,
 				'fb_status' : fb_status,
-				'fb_pic' : fb_pic
+				'fb_pic' : fb_pic,
+				'fb_access' : fb_accessToken
 			}
 		);
 	};
@@ -70,6 +71,7 @@ include('includes/footer.php');
 		 				if(response.status === "connected"){
 
 		 					var fbuser_id = FB.getUserID();
+		 					var access_token = FB.getAccessToken();
 
 		 					$.ajax({
 								type : 'post', 
@@ -87,16 +89,33 @@ include('includes/footer.php');
 												var fb_status = "verified_user";
 												var fb_pic = data[0]['pic_small'];
 
-												buildFbSettings(fbuser_id, fb_user, fb_status, fb_pic);
+												buildFbSettings(fbuser_id, fb_user, fb_status, fb_pic, access_token);
 
 										});	
+								  }else{
+								  	
+								  	$.post(
+								  		"actions.php", 
+								  		{"action" : "has_oauth", "provider" : "facebook"},
+								  		function(response){
+								  			
+								  			if(parseInt(response)){ //a different facebook user is logged in
+								  				
+								  				buildFbSettings("", "", "unknown_user", "img/default.png", "");
+								  			}else{ //a new user with no facebook account
+								  				
+								  				buildFbSettings("", "", "no_user", "img/default.png", "");
+								  			}
+								  		}
+								  	);
+								
 								  }
 							});
 		 				
 		 				}else if(response.status === 'not_authorized'){//unknown user
-		 					buildFbSettings("", "", "unknown_user", "img/default.png");
+		 					buildFbSettings("", "", "unknown_user", "img/default.png", "");
 		 				}else{//not logged in
-		 					buildFbSettings("", "", "no_user", "img/default.png");
+		 					buildFbSettings("", "", "no_user", "img/default.png", "");
 		 				}
 		   		});
 
@@ -104,6 +123,7 @@ include('includes/footer.php');
 					noty(noty_success);
 					
 					ajaxDone();
+					
 					setTimeout(function(){
 						window.location.replace('postr.php');
 					}, 1000);

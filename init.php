@@ -21,8 +21,8 @@ $userInfo = $db->getUserInfo($user_id);
 
 //twitter defaults
 $networks->setTwitterRequestToken();
-$twitterUrl =  $networks->getTwitterLogin();
-$twitterUrlText = ' Login';
+$twitterLogin =  $networks->getTwitterLogin();
+$twitterLoginText = ' Login';
 $twitterUserImg = 'img/default.png';
 $twitterUserName = '';
 
@@ -57,7 +57,28 @@ if($db->hasOauth($user_id, "twitter") == 0){ //new user
 	$twitterUserName = $twitterUser['username'];
 	$twitterUserImg  = $twitterUser['user_img'];
 
-	$twitterUrl = '#';
-	$twitterUrlText = '';
-}	
+	$twitterLogin = '#';
+	$twitterLoginText = '';
+}
+
+
+if(!isset($_SESSION['tumblr_access_token'], $_SESSION['tumblr_access_secret'])){
+	if(!isset($_SESSION['tumblr_request_secret'])){
+		$tumblrLogin = $networks->getTumblrLogin();
+		$tumblrLoginText = " Login";
+		$tumblrUserName = "";
+		$tumblrPic = "img/default.png";
+	}
+
+	if(isset($_GET['oauth_token'], $_GET['oauth_verifier'])){
+		$networks->unsetTumblrRequest($_GET['oauth_token'], $_GET['oauth_verifier']);
+		header('Location: '.$_SERVER['PHP_SELF']);
+	}
+	
+}else{
+	$tumblrUser = $networks->getTumblrUserInfo();
+	$tumblrLogin = '#';
+	$tumblrUserName = $tumblrUser['user_name'];
+	$tumblrPic = $tumblrUser['user_avatar'];
+}
 ?>

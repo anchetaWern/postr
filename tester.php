@@ -172,9 +172,32 @@ echo "<br/>";
 if($oAuthData['oauth_id'] == $networks->hasFbUser()){
 	echo "yep!";
 }
- */
+ 
 //echo $_SESSION['fblogin_status'];
 require_once('class.db.php');
 $db = new db();
 echo $db->verifyOauthUser($user_id, $oauth_id, $provider)
+require_once('class.networks.php');
+$networks = new networks();
+$networks->postTumblrText("hello tumblr", "tumblr testing");
+*/
+
+$config['FB_KEY'] = '355248497890497';
+$config['FB_SECRET'] = 'a856b0b1f46f0481785812d0ce55e23f';
+
+require_once('libs/facebook/facebook.php');
+$fb = new Facebook(array(
+		  'appId'  => $config['FB_KEY'] ,
+		  'secret' => $config['FB_SECRET']
+		));
+
+$attachment = array(
+	'message' => '...',
+	'name' => ',,',
+	'description' => '.',
+	'link' => 'http://anchetawern.github.com'
+);
+
+$response = $fb->api('/me/feed', 'post', $attachment);
+print_r($response);
 ?>
