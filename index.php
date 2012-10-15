@@ -26,6 +26,8 @@ include('includes/header.php');
 				</form> 
 			</div><!--/.form_container-->
 		</div><!--/.container-->
+
+		<div id="fb-root"></div>
 	</body>
 <?php
 include('includes/footer.php');

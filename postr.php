@@ -103,6 +103,8 @@ if(empty($_SESSION['uid'])){
 			<a class="close-reveal-modal">&#215;</a>
 		</div><!--/#settings_modal-->
 		
+
+
 		<div id="facebook_modal" class="reveal-modal medium">
 			<h3>Facebook Settings</h3>
 			
@@ -164,6 +166,36 @@ if(empty($_SESSION['uid'])){
 			<a class="close-reveal-modal">&#215;</a>
 		</div><!--/#facebook_modal-->
 		
+		<div id="tumblr_modal" class="reveal-modal medium">
+			<h3>Tumblr Settings</h3>
+			<span>Post Type</span>
+			
+			<ul class="tumblr_posttypes">
+				<li>
+					<i class="large-icons foundicon-edit">
+						<p>Text</p>
+					</i>
+				</li>
+
+				<li>
+					<i class="large-icons foundicon-photo">
+						<p>Photo</p>
+					</i>
+				</li>
+				<li>
+					<i class="large-icons foundicon-video">
+						<p>Video</p>
+					</i>
+				</li>
+				<li>
+					<i class="large-icons foundicon-idea">
+						<p>Quote</p>
+					</i>
+				</li>
+			</ul>
+			<a class="close-reveal-modal">&#215;</a>
+		</div><!--/#tumblr_modal-->
+
 		<div id="fb-root"></div>
 	</body>
 	
@@ -239,7 +271,7 @@ include('includes/footer.php');
 					fb_logoutlink.insertAfter($('.facebook_settings'));
 
 					$('#fb_user').empty();
-					$('#fb_pic').attr('src', 'img/default.png');
+					$('#fb_pic').attr('src', 'assets/system_img/fb.png');
 				break;
 
 				case 'no_user':
@@ -252,7 +284,7 @@ include('includes/footer.php');
 					fb_loginlink.insertAfter($('.facebook_settings'));
 
 					$('#fb_user').empty();
-					$('#fb_pic').attr('src', 'img/default.png');
+					$('#fb_pic').attr('src', 'assets/system_img/fb.png');
 				break;
 			}
 		};
@@ -768,7 +800,7 @@ include('includes/footer.php');
 				fb_loginlink.insertAfter($('.facebook_settings'));
 
 				$('#fb_user').empty();
-				$('#fb_pic').attr('src', 'img/default.png');
+				$('#fb_pic').attr('src', 'assets/system_img/fb.png');
 	  
 	  		$("#facebook_logout").remove();
 	  	});
@@ -796,10 +828,10 @@ include('includes/footer.php');
 									 		buildFbSettings(user.id, fb_user, "verified_user", fb_pic, access_token);
 									 }else if(response.status === "not_authorized"){
 
-									 		buildFbSettings("", "", "unknown_user", "img/default.png", "");
+									 		buildFbSettings("", "", "unknown_user", "assets/system_img/fb.png", "");
 									 }else{
 
-									 		buildFbSettings("", "", "no_user", "img/default.png", "");
+									 		buildFbSettings("", "", "no_user", "assets/system_img/fb.png", "");
 									 }
 
 									var fbLoginStatus = getFbLoginStatus();

@@ -23,7 +23,7 @@ $userInfo = $db->getUserInfo($user_id);
 $networks->setTwitterRequestToken();
 $twitterLogin =  $networks->getTwitterLogin();
 $twitterLoginText = ' Login';
-$twitterUserImg = 'img/default.png';
+$twitterUserImg = 'assets/system_img/twitter.png';
 $twitterUserName = '';
 
 
@@ -67,7 +67,7 @@ if(!isset($_SESSION['tumblr_access_token'], $_SESSION['tumblr_access_secret'])){
 		$tumblrLogin = $networks->getTumblrLogin();
 		$tumblrLoginText = " Login";
 		$tumblrUserName = "";
-		$tumblrPic = "img/default.png";
+		$tumblrPic = "assets/system_img/tumblr.png";
 	}
 
 	if(isset($_GET['oauth_token'], $_GET['oauth_verifier'])){

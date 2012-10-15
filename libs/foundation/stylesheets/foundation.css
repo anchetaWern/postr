@@ -692,8 +692,8 @@ ul.orbit-bullets li.active.has-thumb { background-position: 0 0; border-top: 2px
 .reveal-modal-bg { position: fixed; height: 100%; width: 100%; background: #000; background: rgba(0, 0, 0, 0.45); z-index: 40; display: none; top: 0; left: 0; }
 
 .reveal-modal { background: white; visibility: hidden; display: none; top: 100px; left: 50%; margin-left: -260px; width: 520px; position: absolute; z-index: 41; padding: 30px; -webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 0.4); -moz-box-shadow: 0 0 10px rgba(0, 0, 0, 0.4); box-shadow: 0 0 10px rgba(0, 0, 0, 0.4); }
-.reveal-modal *:first-child { margin-top: 0; }
-.reveal-modal *:last-child { margin-bottom: 0; }
+/*.reveal-modal *:first-child { margin-top: 0; }*/
+/*.reveal-modal *:last-child { margin-bottom: 0; }*/
 .reveal-modal .close-reveal-modal { font-size: 22px; font-size: 2.2rem; line-height: .5; position: absolute; top: 8px; right: 11px; color: #aaa; text-shadow: 0 -1px 1px rgba(0, 0, 0, 0.6); font-weight: bold; cursor: pointer; }
 .reveal-modal.small { width: 30%; margin-left: -15%; }
 .reveal-modal.medium { width: 40%; margin-left: -20%; }

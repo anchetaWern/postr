@@ -68,3 +68,25 @@
     opacity: 0.8;
     background-color: grey;
 }
+
+.large-icons{
+    font-size: 100px;
+}
+
+.large-icons:hover{
+    color:#2BA6CB;
+}
+
+.tumblr_posttypes li{
+    list-style:none;
+    float: left;
+    margin-left: 12px;
+}
+
+.tumblr_posttypes li p { 
+   
+    font-size: 12px; 
+    font-style: normal;
+      margin-left: 33px;
+    margin-top: -25px;
+}

@@ -237,6 +237,7 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 	$fbLists = $db->getFbGroups($user_id, 'lists');
 
 	$twitterSetting = $db->getNetworkSetting($user_id, 'twitter');
+	//$tumblrSetting = $db->getNetworkSetting($user_id, 'tumblr');
 
 	if($db->hasOauth($user_id, "twitter") > 0 && $twitterSetting == 1){
 		$res = $networks->tweet(
@@ -266,6 +267,8 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 	}
 
 }
+
+
 
 function replaceLongUrls($status, $long_urls, $short_urls){
 	
