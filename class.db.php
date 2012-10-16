@@ -243,12 +243,12 @@ class db{
 		return $oAuthUser->num_rows;
 	}
 
-	public function getTwitterUserTokens($user_id){
+	public function getOAuthUserTokens($user_id, $provider){
 
 		$tokens = array();
 		$selectUserTokens = $this->conn->query("
 			SELECT oauth_token, oauth_secret 
-			FROM tbl_oauth WHERE user_id = '$user_id'
+			FROM tbl_oauth WHERE user_id = '$user_id' AND provider = '$provider'
 		");
 
 		if($selectUserTokens->num_rows > 0){

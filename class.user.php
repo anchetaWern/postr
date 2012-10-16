@@ -24,5 +24,10 @@ class user{
 		$_SESSION['twitteruser_secret'] 	= $oauthSecret;
 	}
 
+	public function setTumblrUserTokens($oauthToken, $oauthSecret){
+		$_SESSION['tumblr_access_token'] = $oauthToken;
+		$_SESSION['tumblr_access_secret'] = $oauthSecret;
+	}
+
 }
 ?>

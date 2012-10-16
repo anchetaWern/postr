@@ -54,7 +54,7 @@ switch($action){
 		
 
 		//twitter user tokens
-		$twitterUserTokens = $db->getTwitterUserTokens($uid);
+		$twitterUserTokens = $db->getOAuthUserTokens($uid, "twitter");
 		if(!empty($twitterUserTokens)){
 			$_SESSION['twitteruser_token'] = $twitterUserTokens['oauth_token'];
 			$_SESSION['twitteruser_secret'] = $twitterUserTokens['oauth_secret'];
@@ -165,8 +165,14 @@ switch($action){
 			}
 			
 		}else{ //single post (can contain text with one or more links)
-			
-			postToNetworks($user_id, $status, $fbLoginStatus, $link, $file);
+			$tumblr_setting = $_POST['tumblr_setting'];
+			$tumblr_posttype = $_POST['tumblr_posttype'];
+			$post_title = $_POST['tumblr_posttitle'];
+			$original_text = $_POST['status'];
+			$source = $_POST['source'];
+			$tumblr_photourl = $_POST['tumblr_photourl'];
+
+			postToNetworks($user_id, $status, $fbLoginStatus, $link, $file, $tumblr_setting, $tumblr_posttype, $post_title, $original_text, $source, $tumblr_photourl);
 		}	
 
 
@@ -227,7 +233,7 @@ switch($action){
 	break;
 }
 
-function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = ''){
+function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '', $tumblr_setting = '', $tumblr_posttype = '', $post_title = '', $original_text = '', $source = '', $photo_url = ''){
 	global $db;
 	global $networks;
 
@@ -237,7 +243,6 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 	$fbLists = $db->getFbGroups($user_id, 'lists');
 
 	$twitterSetting = $db->getNetworkSetting($user_id, 'twitter');
-	//$tumblrSetting = $db->getNetworkSetting($user_id, 'tumblr');
 
 	if($db->hasOauth($user_id, "twitter") > 0 && $twitterSetting == 1){
 		$res = $networks->tweet(
@@ -264,6 +269,31 @@ function postToNetworks($user_id, $status, $fbloginstatus, $link = '', $file = '
 		$networks->postToFbGroup($fbGroups, $status, $link, $file);
 		$networks->postToFbPage($fbPages, $status, $link, $file);
 		$networks->postToFbGroup($fbLists, $status, $link, $file); //list(same structure with groups)
+	}
+
+	if($db->hasOauth($user_id, "tumblr") && $tumblr_setting == 1 && $tumblr_posttype){
+		switch($tumblr_posttype){
+			case 'text':
+				$networks->postTumblrText($status, $post_title);
+			break;
+
+			case 'photo':
+				if(!empty($photo_url)){
+					$networks->postTumblrPhoto($photo_url);
+				}else{
+					$networks->postTumblrPhoto($file);
+				}
+				
+			break;
+
+			case 'video':
+				$networks->postTumblrVideo($original_text);
+			break;
+
+			case 'quote':
+				$networks->postTumblrQuote($status, $source);
+			break;
+		}
 	}
 
 }

@@ -49,7 +49,7 @@ if($db->hasOauth($user_id, "twitter") == 0){ //new user
 		}
 	}
 }else{ //existing user
-	$twitterUser = $db->getTwitterUserTokens($user_id);
+	$twitterUser = $db->getOAuthUserTokens($user_id, "twitter");
 
 	$user->setTwitterUserTokens($twitterUser['oauth_token'], $twitterUser['oauth_secret']);
 
@@ -62,23 +62,42 @@ if($db->hasOauth($user_id, "twitter") == 0){ //new user
 }
 
 
-if(!isset($_SESSION['tumblr_access_token'], $_SESSION['tumblr_access_secret'])){
-	if(!isset($_SESSION['tumblr_request_secret'])){
-		$tumblrLogin = $networks->getTumblrLogin();
-		$tumblrLoginText = " Login";
-		$tumblrUserName = "";
-		$tumblrPic = "assets/system_img/tumblr.png";
-	}
+if($db->hasOauth($user_id, "tumblr") == 0){
+	if(!isset($_SESSION['tumblr_access_token'], $_SESSION['tumblr_access_secret'])){
+		if(!isset($_SESSION['tumblr_request_secret'])){
+			$tumblrLogin = $networks->getTumblrLogin();
+			$tumblrLoginText = " Login";
+			$tumblrUserName = "";
+			$tumblrPic = "assets/system_img/tumblr.png";
+		}
 
-	if(isset($_GET['oauth_token'], $_GET['oauth_verifier'])){
-		$networks->unsetTumblrRequest($_GET['oauth_token'], $_GET['oauth_verifier']);
-		header('Location: '.$_SERVER['PHP_SELF']);
+		if(isset($_GET['oauth_token'], $_GET['oauth_verifier'])){
+
+			$networks->unsetTumblrRequest($_GET['oauth_token'], $_GET['oauth_verifier']);
+			$networks->setTumblr();
+
+			$tumblrUser = $networks->getTumblrUserInfo();
+
+			$oauth_token = $tumblrUser['access_token'];
+			$oauth_secret = $tumblrUser['access_secret'];
+			$tumblrUserName = $tumblrUser['user_name'];
+			$tumblrPic = $tumblrUser['user_avatar'];
+			
+			$db->createOauth($user_id, "", 'tumblr', $oauth_token, $oauth_secret, $tumblrUserName);	
+
+			header('Location: '.$_SERVER['PHP_SELF']);
+		}
 	}
-	
 }else{
+	$tumblrUserTokens = $db->getOAuthUserTokens($user_id, "tumblr");
+	$user->setTumblrUserTokens($tumblrUserTokens['oauth_token'], $tumblrUserTokens['oauth_secret']);
+
+	$networks->setTumblr();
 	$tumblrUser = $networks->getTumblrUserInfo();
 	$tumblrLogin = '#';
+	
 	$tumblrUserName = $tumblrUser['user_name'];
 	$tumblrPic = $tumblrUser['user_avatar'];
+
 }
 ?>

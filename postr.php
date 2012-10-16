@@ -18,9 +18,19 @@ if(empty($_SESSION['uid'])){
 			
 			<div class="form_container">
 				<form class="custom" enctype="multipart/form-data" action="upload.php">
+
+					<label for="post_title" style="display:none;">Title</label>
+					<input type="text" name="post_title" id="post_title" style="display:none;"/>
+
+					<label for="photo_url" style="display:none;">Photo Url</label>
+					<input type="text" name="photo_url" id="photo_url" style="display:none;">
+
 					<label for="status">What's Up?</label>
 					<textarea name="status" id="status" style="height:100px;">
 					</textarea>
+
+					<label for="post_source" style="display:none;">Source</label>
+					<input type="text" name="post_source" id="post_source" style="display:none;">
 					
 					<a href="#" id="post_status" class="success button">Post</a>
 					<a href="#" id="settings">
@@ -324,11 +334,6 @@ include('includes/footer.php');
 					});
 				}else{
 					current_user.settings = users.get('users')[current_user.uid]['settings'];
-
-					//default tumblr settings
-					current_user.settings.tumblr.posttype = "text";
-					current_users[current_user.uid].settings.tumblr.posttype = "text";
-					$('li[data-postype=text] i').addClass('enabled_icons');
 					loadSettings();
 				}
 			}
@@ -359,6 +364,15 @@ include('includes/footer.php');
 			createFbLists(fb_lists, 'current_fb_lists', 'list', 'current_fb_lists');
 			
 			twitter_limit();
+
+			//default tumblr settings
+			current_user.settings.tumblr.posttype = "text";
+			current_users[current_user.uid].settings.tumblr.posttype = "text";
+			$('li[data-postype=text] i').addClass('enabled_icons');
+
+			if(Number(current_user.settings.tumblr.status)){
+				$('label[for=post_title], #post_title').show();
+			}
 		};
 
 		var createFbLists = function(listData, container, prefix, listClass){
@@ -619,10 +633,23 @@ include('includes/footer.php');
 			var post_contents = {};
 			var post = $.trim($('#status').val());
 			var fbLoginStatus = getFbLoginStatus();
+			var tumblrSetting = Number(current_user.settings.tumblr.status);
+			var tumblrPostType = getTumblrPostType(post);
+			var tumblrPostTitle = $('#post_title').val();
+			var tumblrSource = $('#post_source').val();
+			var tumblrPhotoUrl = $('#photo_url').val();
+
+			if(tumblrPostType){
+				current_user.settings.tumblr.posttype = tumblrPostType;
+				current_users[current_user.uid].settings.tumblr.posttype = tumblrPostType;
+
+				noty_success.text = "Tumblr Post type has been updated to " + tumblrPostType + " based on your input";
+				noty(noty_success);
+			}
 
 			checkNetworks();
 			ajaxLoad();
-			
+		
 			//comma-separated posts; only works for links
 			if(parseInt(current_user.settings.multipost)){
 				var posts = post.split(",");
@@ -653,7 +680,7 @@ include('includes/footer.php');
 			
 
 			}else{
-			//single post
+				//single post
 				var post_link = [];
 				var longUrls = getLongUrls($('#status').val());
 
@@ -673,7 +700,12 @@ include('includes/footer.php');
 						'status' : post,
 						'link' : post_link,
 						'file' : current_file.filename,
-						'long_urls' : longUrls
+						'long_urls' : longUrls,
+						'tumblr_setting' : tumblrSetting,
+						'tumblr_posttype' : tumblrPostType,
+						'tumblr_posttitle' : tumblrPostTitle,
+						'tumblr_source' : tumblrSource,
+						'tumblr_photourl' : tumblrPhotoUrl
 					},
 					function(response){
 						
@@ -690,6 +722,7 @@ include('includes/footer.php');
 				);
  
 			}
+			
 		});
 
 		var checkNetworks = function(){
@@ -945,15 +978,36 @@ include('includes/footer.php');
 			$.post('actions.php', {'action' : 'multipost', 'status' : status});
 		});
 
+		var getTrue = function(r){ //returns the true value in an array
+			var len = r.length; 
+			for(var x = 0;  x < len; x++){
+			if(r[x]){
+			  return x;
+			}
+			}
+		};
+
 		var getTumblrPostType = function(status){
-
-			var hasPhoto !!$('#file_to_upload').children().length;
+			var index;
+			var posttypes = ["photo", "text", "quote", "video"];
+			var hasPhoto = !!$('#file_to_upload').children().length;
 			var hasText = !!status;
-			var hasQuote = !!/"+\w+(\w|\s)+"/.test(status);
+			var hasQuote = /^"+\w+(\w|\s)+".+$/.test(status);
 
-			var videoRegex = new RegExp("^(http|https)://(youtu|www.youtube|vimeo|youtube)\.(be|com)/[A-Za-z0-9\?&=]+$");
-			var hasVideo = !!videoRegex.test(status);
-
+			var videoRegex = new RegExp("^(http|https)://(youtu|www.youtube|vimeo|youtube)\.(be|com)/[A-Za-z0-9\?&=\+_\^\{\[\.\$\*\(\)\|\<\>]+$");
+			var hasVideo = videoRegex.test(status);
+			
+			if(hasVideo || hasQuote){
+				hasText = false;
+			}
+			
+			var result = hasPhoto + hasText + hasQuote + hasVideo;
+			
+			if(result === 1){ //can only be one post type
+				index = getTrue([hasPhoto, hasText, hasQuote, hasVideo]);
+			}
+			return posttypes[index];
+	
 		};
 		
 		$('#status').keydown(function(){
@@ -1133,6 +1187,32 @@ include('includes/footer.php');
 
 			$('.tumblr_posttypes li i').removeClass('enabled_icons');
 			$(this).children('i').addClass('enabled_icons');
+
+			switch(posttype){
+				case 'text':
+					$('label[for=post_title], #post_title, label[for=post_source], #post_source').show();
+					$('label[for=photo_url], #photo_url').hide();
+					$('#photo_url').val('');
+				break;
+
+				case 'quote':
+					$('label[for=post_source], #post_source').show();
+					$('label[for=photo_url], #photo_url, label[for=post_title], #post_title').hide();
+					$('#photo_url, #post_title').val('');
+				break;
+
+				case 'video':
+					$('label[for=post_title], #post_title, label[for=post_source], #post_source, label[for=photo_url], #photo_url').hide();
+					$('#photo_url, #post_source, #post_title').val('');
+				break;
+
+				case 'photo':
+					$('label[for=photo_url], #photo_url').show();
+					$('label[for=post_title], #post_title, label[for=post_source], #post_source').hide();
+					$('#photo_url, #post_source, #post_title').val('');
+				break;
+			}
+
 		});
 		
 	</script>
