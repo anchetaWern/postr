@@ -22,6 +22,11 @@ The stable version of the project is currently available at: https://postr-wern.
 You can learn more about the project in my blog post: http://anchetawern.github.com/blog/2012/10/01/introduction-to-postr/
 
 
+##Project Status
+
+Abandonware. I no longer have any plans on improving and maintaining this project.
+
+
 ##License
 
 The MIT License (MIT)
